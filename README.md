@@ -45,32 +45,71 @@
 
 ## 🚀 Installation
 
-Install AgentHub as a global command on your machine:
+Requires **Python 3.10+**. After install, `agenthub` is available from any directory in your shell.
 
-### Option 1: Standard Pip Install (Recommended)
+### Option 1: One-line install from GitHub (Recommended for others)
 
-From the project directory:
+Install directly from the repo without cloning first:
 
 ```bash
-# Install as an editable CLI tool
-pip install -e .
-
-# Or install as a regular package
-pip install .
+pip install git+https://github.com/engrfayyazabbas/CliManager.git
 ```
 
-Now the `agenthub` starter command is available everywhere in your shell:
+Isolated install with **pipx** (keeps AgentHub in its own environment):
+
+```bash
+pipx install git+https://github.com/engrfayyazabbas/CliManager.git
+```
+
+Or with **uv**:
+
+```bash
+uv tool install git+https://github.com/engrfayyazabbas/CliManager.git
+```
+
+Verify:
 
 ```bash
 agenthub --version
 ```
 
-### Option 2: Using pipx (Isolated CLI Environment)
-
-If you prefer isolated Python CLI tools:
+### Option 2: Clone then install
 
 ```bash
-pipx install .
+git clone https://github.com/engrfayyazabbas/CliManager.git
+cd CliManager
+pip install .
+```
+
+Editable install (for local development — changes to the repo apply immediately):
+
+```bash
+pip install -e .
+```
+
+### Option 3: Run without installing
+
+From the project directory:
+
+```bash
+pip install -r requirements.txt
+python agenthub.py
+```
+
+On Windows you can also use the helpers in the repo root:
+
+```bash
+.\agenthub.cmd
+# or
+.\agenthub.ps1
+```
+
+### Update
+
+```bash
+pip install --upgrade git+https://github.com/engrfayyazabbas/CliManager.git
+# or, if you used pipx:
+pipx upgrade agenthub
 ```
 
 ---
