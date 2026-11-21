@@ -1,6 +1,5 @@
 """
 AgentHub — The Unified AI Developer CLI Manager
-Inspired by the Claude Code terminal aesthetic.
 Detects, displays, inspects, and launches AI coding CLI agents on any platform.
 """
 
@@ -41,7 +40,7 @@ VERSION = "1.1.0"
 APP_NAME = "AgentHub"
 CONSOLE = Console()
 
-# Warm Claude Code aesthetic palette
+# Warm terminal aesthetic palette
 COLOR_PRIMARY = "#ff6b35"       # Vibrant terracotta / orange
 COLOR_SECONDARY = "#f7a072"     # Warm peach / soft amber
 COLOR_ACCENT = "#fbbf24"        # Warm gold
@@ -232,12 +231,12 @@ def detect_agents(config: dict[str, Any]) -> list[dict[str, Any]]:
     return enriched
 
 # ---------------------------------------------------------------------------
-# Claude-Code Style Sticker Banner & UI Components
+# Sticker Banner & UI Components
 # ---------------------------------------------------------------------------
 
 def render_sticker_banner(agents: list[dict[str, Any]], config_path: Path) -> Panel:
     """
-    Renders the signature Claude Code-inspired sticker badge and workspace card.
+    Renders the AgentHub sticker badge and workspace card.
     """
     installed_count = sum(1 for a in agents if a["installed"])
     total_count = len(agents)
@@ -305,7 +304,7 @@ def render_sticker_banner(agents: list[dict[str, Any]], config_path: Path) -> Pa
         content_table,
         box=box.ROUNDED,
         border_style=COLOR_SECONDARY,
-        title=f"[bold {COLOR_PRIMARY}]✦ Claude Code CLI Style Workspace ✦[/bold {COLOR_PRIMARY}]",
+        title=f"[bold {COLOR_PRIMARY}]✦ AgentHub Workspace ✦[/bold {COLOR_PRIMARY}]",
         title_align="left",
         subtitle=f"[dim]Run [bold white]agenthub --help[/bold white] for command line options[/dim]",
         subtitle_align="right",
@@ -394,7 +393,7 @@ def read_navigation_key() -> str:
 
 def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
     """
-    Claude Code-styled interactive menu with arrow/vim navigation,
+    Interactive menu with arrow/vim navigation,
     direct number jump (1-9), and single-letter hotkeys.
     """
     items: list[tuple[str, str, Any, str]] = []
@@ -775,11 +774,11 @@ def build_parser() -> argparse.ArgumentParser:
     """Construct command line arguments parser."""
     parser = argparse.ArgumentParser(
         prog="agenthub",
-        description="AgentHub — The Unified AI Developer CLI Manager (Claude Code-inspired interface)",
+        description="AgentHub — The Unified AI Developer CLI Manager",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  agenthub                 # Open interactive Claude Code-styled dashboard
+  agenthub                 # Open interactive AgentHub dashboard
   agenthub list            # Print status summary table of all agents
   agenthub launch agy      # Directly launch Gemini CLI (agy)
   agenthub launch codex    # Directly launch Codex CLI

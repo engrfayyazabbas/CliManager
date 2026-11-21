@@ -1,6 +1,6 @@
 # ✳ AgentHub — The Unified AI Developer CLI Manager
 
-> A beautiful, fast, and lightweight CLI agent mission control inspired by the **Claude Code** terminal aesthetic. Manage, switch, inspect, and launch all your AI coding agents in one tap.
+> A beautiful, fast, and lightweight CLI agent mission control. Manage, switch, inspect, and launch all your AI coding agents in one tap.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![CLI](https://img.shields.io/badge/Command-agenthub-ff6b35)](https://github.com/)
@@ -10,7 +10,7 @@
 ---
 
 ```text
-┌─ ✦ Claude Code CLI Style Workspace ✦ ───────────────────────────────────────┐
+┌─ ✦ AgentHub Workspace ✦ ────────────────────────────────────────────────────┐
 │ ┌──────────────────────┐  AgentHub — Unified AI Developer CLI Manager       │
 │ │  ✳  A G E N T H U B  │  Your mission control for coding agents: launch,   │
 │ │    ▲  ⬡  ◈  ⬢  ▲     │  switch, and inspect.                              │
@@ -26,8 +26,8 @@
 
 ## ✨ Features
 
-- **Claude Code-Inspired Interface**: Warm terracotta/peach aesthetic, sticker badge, clean rounded panels, and status chips.
-- **Installable System CLI**: Install once and run `agenthub` from any directory or terminal, just like `agy`, `claude`, or `gh`.
+- **Warm Terminal Interface**: Terracotta/peach aesthetic, sticker badge, clean rounded panels, and status chips.
+- **Installable System CLI**: Install once and run `agenthub` from any directory or terminal, just like `agy`, `codex`, or `gh`.
 - **Auto-Detect & Health Check**: Automatically scans PATH for your AI agents (`agy`, `codex`, `opencode`, `agent/cursor`, and custom CLIs) and retrieves active versions.
 - **Interactive Keyboard Controls**: Navigate with **↑ / ↓** or **j / k**, press **1-9** to quick-launch, or use single-letter hotkeys (`r`, `d`, `u`, `a`, `s`, `q`).
 - **Direct CLI Subcommands**: Run `agenthub list`, `agenthub launch agy`, or `agenthub doctor` directly from scripts or shell shortcuts without entering the TUI.
@@ -145,7 +145,7 @@ agenthub config --open
 | **OpenCode CLI** | `opencode` | Open-source terminal AI coding tool |
 | **Cursor CLI** | `agent` | Cursor AI editor CLI interface |
 
-*Any additional AI or developer CLI (e.g. `aider`, `claude`, `gh`, `ollama`) can be added in 5 seconds via `agenthub add` or by editing `agents.json`.*
+*Any additional AI or developer CLI (e.g. `aider`, `gh`, `ollama`) can be added in 5 seconds via `agenthub add` or by editing `agents.json`.*
 
 ---
 
