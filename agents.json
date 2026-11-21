@@ -1,0 +1,47 @@
+{
+  "agents": [
+    {
+      "name": "Gemini CLI",
+      "command": "agy",
+      "description": "Google's AI coding assistant CLI",
+      "install_method": "npm install -g @anthropic-ai/gemini-cli",
+      "update_method": "npm update -g @google/gemini-cli",
+      "config_locations": [
+        "%USERPROFILE%\\.gemini",
+        "%USERPROFILE%\\.gemini\\settings.json"
+      ]
+    },
+    {
+      "name": "Codex CLI",
+      "command": "codex",
+      "description": "OpenAI's Codex CLI agent for software engineering",
+      "install_method": "npm install -g @openai/codex",
+      "update_method": "npm update -g @openai/codex",
+      "config_locations": [
+        "%USERPROFILE%\\.codex",
+        "%USERPROFILE%\\.codex\\config.json"
+      ]
+    },
+    {
+      "name": "OpenCode CLI",
+      "command": "opencode",
+      "description": "Open-source AI coding CLI tool",
+      "install_method": "npm install -g opencode-ai",
+      "update_method": "npm update -g opencode-ai",
+      "config_locations": [
+        "%USERPROFILE%\\.opencode"
+      ]
+    },
+    {
+      "name": "Cursor CLI",
+      "command": "agent",
+      "description": "Cursor AI editor CLI interface",
+      "install_method": "Install from https://cursor.com (add to PATH via Cursor settings)",
+      "update_method": "Update via Cursor application or reinstall from https://cursor.com",
+      "config_locations": [
+        "%APPDATA%\\Cursor",
+        "%USERPROFILE%\\.cursor"
+      ]
+    }
+  ]
+}
