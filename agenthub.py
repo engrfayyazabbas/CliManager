@@ -26,7 +26,8 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from rich.console import Console
+from rich.console import Console, Group
+from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
@@ -231,123 +232,69 @@ def detect_agents(config: dict[str, Any]) -> list[dict[str, Any]]:
     return enriched
 
 # ---------------------------------------------------------------------------
-# Sticker Banner & UI Components
+# Header & UI Components
 # ---------------------------------------------------------------------------
 
-def render_sticker_banner(agents: list[dict[str, Any]], config_path: Path) -> Panel:
-    """
-    Renders the AgentHub sticker badge and workspace card.
-    """
-    installed_count = sum(1 for a in agents if a["installed"])
-    total_count = len(agents)
+def render_header(agents: list[dict[str, Any]]) -> Panel:
+    """Slim one-line header: brand, version, ready count."""
+    installed = sum(1 for a in agents if a["installed"])
+    total = len(agents)
 
-    # Inner Sticker Badge
-    sticker_text = Text()
-    sticker_text.append(" ✳  A G E N T H U B \n", style=f"bold {COLOR_PRIMARY}")
-    sticker_text.append("   ▲  ⬡  ◈  ⬢  ▲   \n", style=f"bold {COLOR_SECONDARY}")
-    sticker_text.append(f" [ v{VERSION} • ACTIVE ]", style=f"reverse bold {COLOR_PRIMARY}")
-
-    sticker_panel = Panel(
-        sticker_text,
-        box=box.HEAVY,
-        border_style=f"bold {COLOR_PRIMARY}",
-        padding=(0, 1),
-    )
-
-    # Info grid next to sticker
-    info_table = Table.grid(padding=(0, 2))
-    info_table.add_column(justify="left")
-    info_table.add_column(justify="left")
-
-    meta_text = Text()
-    meta_text.append(f"{APP_NAME}", style="bold white")
-    meta_text.append(" — Unified AI Developer CLI Manager\n", style=COLOR_MUTED)
-    meta_text.append("Your mission control for coding agents: launch, switch, and inspect.\n\n", style=COLOR_SECONDARY)
-
-    # Status pills
-    if installed_count == total_count:
-        meta_text.append(f"● {installed_count}/{total_count} Agents Ready  ", style=f"bold {COLOR_READY}")
-    elif installed_count > 0:
-        meta_text.append(f"● {installed_count}/{total_count} Agents Ready  ", style=f"bold {COLOR_ACCENT}")
+    if installed == total and total > 0:
+        ready_style = COLOR_READY
+    elif installed > 0:
+        ready_style = COLOR_ACCENT
     else:
-        meta_text.append(f"○ {installed_count}/{total_count} Agents Ready  ", style=f"bold {COLOR_MISSING}")
+        ready_style = COLOR_MISSING
 
-    os_desc = f"{platform.system()} {platform.release()}" if platform.system() == "Windows" else platform.system()
-    meta_text.append(f"•  Platform: {os_desc}  ", style=COLOR_MUTED)
-    meta_text.append(f"•  Python {platform.python_version()}", style=COLOR_MUTED)
-
-    info_table.add_row(sticker_panel, meta_text)
-
-    # Breadcrumb bar
-    cwd_str = str(Path.cwd())
-    if len(cwd_str) > 50:
-        cwd_str = "..." + cwd_str[-47:]
-
-    cfg_str = str(config_path)
-    if len(cfg_str) > 45:
-        cfg_str = "..." + cfg_str[-42:]
-
-    footer_grid = Table.grid(expand=True)
-    footer_grid.add_column(justify="left")
-    footer_grid.add_column(justify="right")
-    footer_grid.add_row(
-        Text.from_markup(f"[{COLOR_MUTED}]📁 Workspace:[/{COLOR_MUTED}] [white]{cwd_str}[/white]"),
-        Text.from_markup(f"[{COLOR_MUTED}]⚙ Config:[/{COLOR_MUTED}] [white]{cfg_str}[/white]"),
-    )
-
-    content_table = Table.grid(padding=(0, 0))
-    content_table.add_row(info_table)
-    content_table.add_row(Text("─" * 72, style="dim"))
-    content_table.add_row(footer_grid)
+    line = Text()
+    line.append(" ✳ AgentHub ", style=f"bold {COLOR_PRIMARY}")
+    line.append(f"v{VERSION}", style=COLOR_MUTED)
+    line.append("  ·  ", style=COLOR_MUTED)
+    line.append(f"{installed}/{total} ready", style=f"bold {ready_style}")
 
     return Panel(
-        content_table,
+        line,
         box=box.ROUNDED,
-        border_style=COLOR_SECONDARY,
-        title=f"[bold {COLOR_PRIMARY}]✦ AgentHub Workspace ✦[/bold {COLOR_PRIMARY}]",
-        title_align="left",
-        subtitle=f"[dim]Run [bold white]agenthub --help[/bold white] for command line options[/dim]",
-        subtitle_align="right",
+        border_style=COLOR_PRIMARY,
         padding=(0, 1),
     )
 
 
 def show_banner(agents: list[dict[str, Any]] | None = None, config_path: Path | None = None) -> None:
-    """Print the main sticker banner to the console."""
-    if agents is None or config_path is None:
-        cfg, path = load_config()
-        config_path = path
+    """Print the slim header banner."""
+    if agents is None:
+        cfg, _ = load_config()
         agents = detect_agents(cfg)
-    CONSOLE.print(render_sticker_banner(agents, config_path))
+    CONSOLE.print(render_header(agents))
 
 
 def show_status_table(agents: list[dict[str, Any]]) -> None:
-    """Print a clean, beautiful status table."""
+    """Print a clean status table."""
     table = Table(
-        title="[bold white]Configured AI Agents[/bold white]",
-        box=box.ROUNDED,
+        title="[bold white]Agents[/bold white]",
+        box=box.SIMPLE_HEAD,
         header_style=f"bold {COLOR_PRIMARY}",
-        show_lines=True,
+        show_lines=False,
+        pad_edge=False,
     )
-    table.add_column("#", style="dim", width=4, justify="center")
-    table.add_column("Agent", min_width=18, style="bold white")
+    table.add_column("#", style=COLOR_MUTED, width=3, justify="right")
+    table.add_column("Agent", min_width=16, style="bold white")
     table.add_column("Command", min_width=10, style=COLOR_CYAN)
-    table.add_column("Status", min_width=14, justify="center")
-    table.add_column("Version", min_width=16, style=COLOR_ACCENT)
-    table.add_column("Binary Location", min_width=24, style=COLOR_MUTED)
+    table.add_column("Status", min_width=10, justify="left")
+    table.add_column("Version", min_width=12, style=COLOR_MUTED)
 
     for i, a in enumerate(agents, 1):
         if a["installed"]:
-            status = f"[bold {COLOR_READY}]● READY[/bold {COLOR_READY}]"
+            status = f"[bold {COLOR_READY}]● ready[/bold {COLOR_READY}]"
         else:
-            status = f"[bold {COLOR_MISSING}]○ MISSING[/bold {COLOR_MISSING}]"
+            status = f"[{COLOR_MISSING}]○ missing[/{COLOR_MISSING}]"
         table.add_row(
             str(i),
             a["name"],
-            f"`{a['command']}`",
+            a["command"],
             status,
-            a["version"],
-            a["exe_path"],
+            a["version"] if a["installed"] else "—",
         )
 
     CONSOLE.print(table)
@@ -391,95 +338,138 @@ def read_navigation_key() -> str:
 # Interactive Menu Selection
 # ---------------------------------------------------------------------------
 
+def _menu_row(
+    label: str,
+    shortcut: str,
+    selected: bool,
+    *,
+    ready: bool | None = None,
+    version: str = "",
+) -> Text:
+    """One menu row — selected gets a solid bar; others stay full brightness (no dim)."""
+    row = Text(no_wrap=True)
+    key = f" {shortcut} " if shortcut else "   "
+    name = f" {label:<24}"
+
+    if selected:
+        row.append("❯", style=f"bold {COLOR_PRIMARY}")
+        row.append(key, style=f"bold white on {COLOR_PRIMARY}")
+        row.append(name, style=f"bold white on {COLOR_PRIMARY}")
+        if ready is True:
+            row.append(f" ● {version}", style=f"bold white on {COLOR_PRIMARY}")
+        elif ready is False:
+            row.append(" ○ missing", style=f"bold white on {COLOR_PRIMARY}")
+    else:
+        row.append(" ")
+        row.append(key, style=COLOR_MUTED)
+        row.append(name, style="white")
+        if ready is True:
+            row.append(" ● ", style=COLOR_READY)
+            row.append(version, style=COLOR_MUTED)
+        elif ready is False:
+            row.append(" ○ missing", style=COLOR_MISSING)
+    return row
+
+
+def build_menu_view(
+    agents: list[dict[str, Any]],
+    items: list[tuple[str, str, Any, str]],
+    selected: int,
+) -> Group:
+    """Build the full interactive menu renderable."""
+    agent_count = len(agents)
+    lines: list[Text] = [Text("Agents", style=f"bold {COLOR_PRIMARY}")]
+
+    for i, (label, kind, agent_idx, shortcut) in enumerate(items):
+        if i == agent_count:
+            lines.append(Text(""))
+            lines.append(Text("Actions", style=f"bold {COLOR_PRIMARY}"))
+
+        if kind == "launch":
+            agent = agents[agent_idx]
+            ver = str(agent["version"])
+            if len(ver) > 18:
+                ver = ver[:17] + "…"
+            lines.append(
+                _menu_row(
+                    label,
+                    shortcut,
+                    i == selected,
+                    ready=bool(agent["installed"]),
+                    version=ver,
+                )
+            )
+        else:
+            lines.append(_menu_row(label, shortcut, i == selected))
+
+    menu_body = Text("\n").join(lines)
+    hints = (
+        f"[{COLOR_MUTED}]↑↓ move · Enter open · "
+        f"1-{min(9, max(agent_count, 1))} launch · "
+        f"q quit[/{COLOR_MUTED}]"
+    )
+
+    return Group(
+        render_header(agents),
+        Text(""),
+        Panel(
+            menu_body,
+            box=box.ROUNDED,
+            border_style=COLOR_SECONDARY,
+            padding=(1, 1),
+            subtitle=hints,
+            subtitle_align="left",
+        ),
+    )
+
+
 def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
     """
     Interactive menu with arrow/vim navigation,
     direct number jump (1-9), and single-letter hotkeys.
+    Uses Live updates so navigation does not flash/dim the screen.
     """
     items: list[tuple[str, str, Any, str]] = []
 
-    # Section 1: Agents
     for i, a in enumerate(agents, 1):
         shortcut = str(i) if i < 10 else ""
-        items.append((f"Launch {a['name']} ({a['command']})", "launch", i - 1, shortcut))
+        items.append((f"{a['name']}  ({a['command']})", "launch", i - 1, shortcut))
 
-    # Section 2: Actions
-    items.append(("⚡ Refresh status & PATH", "refresh", None, "r"))
-    items.append(("🩺 AgentHub Doctor (Diagnostics)", "doctor", None, "d"))
-    items.append(("⬆ Update agents", "update", None, "u"))
-    items.append(("➕ Add new CLI agent", "add", None, "a"))
-    items.append(("⚙ Settings & Config paths", "settings", None, "s"))
-    items.append(("✕ Exit AgentHub", "exit", None, "q"))
+    items.append(("Refresh", "refresh", None, "r"))
+    items.append(("Doctor", "doctor", None, "d"))
+    items.append(("Update", "update", None, "u"))
+    items.append(("Add agent", "add", None, "a"))
+    items.append(("Settings", "settings", None, "s"))
+    items.append(("Quit", "exit", None, "q"))
 
     selected = 0
     total = len(items)
 
-    while True:
-        CONSOLE.clear()
-        CONSOLE.print(render_sticker_banner(agents, config_path))
-        CONSOLE.print()
+    CONSOLE.clear()
+    with Live(
+        build_menu_view(agents, items, selected),
+        console=CONSOLE,
+        auto_refresh=False,
+        transient=True,
+    ) as live:
+        while True:
+            key = read_navigation_key()
 
-        # Render list of options
-        rows = []
-        rows.append(f"[bold {COLOR_PRIMARY}]AVAILABLE AI AGENTS[/bold {COLOR_PRIMARY}]")
-        agent_count = len(agents)
-
-        for i, (label, kind, agent_idx, shortcut) in enumerate(items):
-            if i == agent_count:
-                rows.append("")
-                rows.append(f"[bold {COLOR_SECONDARY}]WORKSPACE & ACTIONS[/bold {COLOR_SECONDARY}]")
-
-            is_sel = (i == selected)
-            pointer = f"[bold {COLOR_PRIMARY}]❯[/bold {COLOR_PRIMARY}]" if is_sel else " "
-
-            badge = f"[{shortcut}]" if shortcut else "   "
-            badge_styled = f"[bold {COLOR_ACCENT}]{badge}[/bold {COLOR_ACCENT}]" if is_sel else f"[dim]{badge}[/dim]"
-
-            if kind == "launch":
-                agent = agents[agent_idx]
-                if agent["installed"]:
-                    status_pill = f"[{COLOR_READY}]● READY[/{COLOR_READY}]"
-                    ver_pill = f"[{COLOR_MUTED}]{agent['version']}[/{COLOR_MUTED}]"
-                else:
-                    status_pill = f"[{COLOR_MISSING}]○ MISSING[/{COLOR_MISSING}]"
-                    ver_pill = f"[{COLOR_MUTED}]install required[/{COLOR_MUTED}]"
-
-                line = f"{pointer} {badge_styled} [bold white]{label:<32}[/bold white] {status_pill}  {ver_pill}"
+            if key in ("up", "k"):
+                selected = (selected - 1) % total
+                live.update(build_menu_view(agents, items, selected), refresh=True)
+            elif key in ("down", "j"):
+                selected = (selected + 1) % total
+                live.update(build_menu_view(agents, items, selected), refresh=True)
+            elif key == "enter":
+                _, kind, idx, _ = items[selected]
+                return f"{kind}:{idx}" if idx is not None else kind
+            elif key in ("q", "escape"):
+                return "exit"
             else:
-                line = f"{pointer} {badge_styled} [white]{label:<32}[/white]"
-
-            if is_sel:
-                line = f"[reverse]{line}[/reverse]" if False else f"[bold]{line}[/bold]"
-            rows.append(line)
-
-        footer_text = f"[bold {COLOR_PRIMARY}]↑/↓ or j/k:[/] Navigate  •  [bold {COLOR_PRIMARY}]Enter:[/] Select  •  [bold {COLOR_PRIMARY}]1-{min(9, len(agents))}:[/] Quick Launch  •  [bold {COLOR_PRIMARY}]q:[/] Quit"
-
-        CONSOLE.print(Panel(
-            "\n".join(rows),
-            title=f"[bold white]Select an Agent or Action[/bold white]",
-            subtitle=footer_text,
-            box=box.ROUNDED,
-            border_style=COLOR_PRIMARY,
-            padding=(1, 2)
-        ))
-
-        key = read_navigation_key()
-
-        # Navigation
-        if key in ("up", "k"):
-            selected = (selected - 1) % total
-        elif key in ("down", "j"):
-            selected = (selected + 1) % total
-        elif key == "enter":
-            _, kind, idx, _ = items[selected]
-            return f"{kind}:{idx}" if idx is not None else kind
-        elif key in ("q", "escape"):
-            return "exit"
-        else:
-            # Check for direct number or letter shortcut
-            for i, (_, kind, idx, shortcut) in enumerate(items):
-                if shortcut and key == shortcut.lower():
-                    return f"{kind}:{idx}" if idx is not None else kind
+                for _, kind, idx, shortcut in items:
+                    if shortcut and key == shortcut.lower():
+                        return f"{kind}:{idx}" if idx is not None else kind
 
 # ---------------------------------------------------------------------------
 # Agent Execution & Diagnostics
@@ -827,7 +817,7 @@ def main() -> None:
 
     # Subcommand dispatch
     if args.subcommand in ("list", "ls"):
-        CONSOLE.print(render_sticker_banner(agents, config_path))
+        CONSOLE.print(render_header(agents))
         CONSOLE.print()
         show_status_table(agents)
         return

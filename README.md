@@ -10,23 +10,30 @@
 ---
 
 ```text
-┌─ ✦ AgentHub Workspace ✦ ────────────────────────────────────────────────────┐
-│ ┌──────────────────────┐  AgentHub — Unified AI Developer CLI Manager       │
-│ │  ✳  A G E N T H U B  │  Your mission control for coding agents: launch,   │
-│ │    ▲  ⬡  ◈  ⬢  ▲     │  switch, and inspect.                              │
-│ │  [ v1.1.0 • ACTIVE ] │                                                    │
-│ └──────────────────────┘  ● 3/4 Agents Ready  •  Platform: Windows 11  •    │
-│                           Python 3.13                                       │
-│ ────────────────────────────────────────────────────────────────────────    │
-│ 📁 Workspace: D:\Projects\MyAwesomeApp      ⚙ Config: ~/.agenthub/agents.json│
-└────────────────────────────── Run agenthub --help for command line options ─┘
+┌──────────────────────────────────────────┐
+│  ✳ AgentHub  v1.1.0  ·  3/4 ready        │
+└──────────────────────────────────────────┘
+
+┌──────────────────────────────────────────┐
+│ Agents                                   │
+│ ❯ 1  Gemini CLI  (agy)      ● 0.1.2      │
+│   2  Codex CLI   (codex)    ● 1.0.0      │
+│   3  OpenCode    (opencode) ○ missing    │
+│                                          │
+│ Actions                                  │
+│   r  Refresh                             │
+│   d  Doctor                              │
+│   q  Quit                                │
+│                                          │
+│ ↑↓ move · Enter open · 1-9 launch · q   │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
 ## ✨ Features
 
-- **Warm Terminal Interface**: Terracotta/peach aesthetic, sticker badge, clean rounded panels, and status chips.
+- **Simple Terminal UI**: Slim header, clear selection highlight, and short action labels — no clutter.
 - **Installable System CLI**: Install once and run `agenthub` from any directory or terminal, just like `agy`, `codex`, or `gh`.
 - **Auto-Detect & Health Check**: Automatically scans PATH for your AI agents (`agy`, `codex`, `opencode`, `agent/cursor`, and custom CLIs) and retrieves active versions.
 - **Interactive Keyboard Controls**: Navigate with **↑ / ↓** or **j / k**, press **1-9** to quick-launch, or use single-letter hotkeys (`r`, `d`, `u`, `a`, `s`, `q`).
