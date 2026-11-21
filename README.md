@@ -1,4 +1,4 @@
-# ⚡ AgentHub — Local CLI Agent Manager
+﻿# âš¡ AgentHub â€” Local CLI Agent Manager
 
 A lightweight Windows terminal application to manage your installed AI coding CLI agents.
 
@@ -10,7 +10,7 @@ A lightweight Windows terminal application to manage your installed AI coding CL
 - **Auto-detect** installed CLI agents via PATH
 - **Display** agent name, status, version, and executable path
 - **Launch** any agent in the current working directory
-- **Check versions** and **update** agents with confirmation
+- **Check versions**, view supported usage information, and **update** agents with confirmation
 - **View** agent info and configuration locations
 - **Add/remove** agents through the interactive settings menu or by editing `agents.json`
 
@@ -57,12 +57,12 @@ python agenthub.py
 9. Exit
 ```
 
-### Settings Sub-menu
+### Usage & limits`r`n`r`nChoose **Show usage & limits** to see the usage information each installed CLI exposes through supported local commands. OpenCode provides historical token and cost statistics via `opencode stats`; Gemini CLI exposes session statistics interactively with `/stats model`; Cursor `agent status` reports account/authentication status, not quota. AgentHub labels unsupported fields unavailable and does not estimate quota, reset times, plan tier, or rate limits. These provider commands are documented in the [Gemini CLI usage docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/index.md), [OpenCode CLI docs](https://opencode.ai/docs/terminal), and [Cursor CLI authentication docs](https://cursor.com/docs/cli/reference/authentication).`r`n`r`n### Settings Sub-menu
 
-- **View agent details** — shows description, install/update commands, and config file locations
-- **Add a new agent** — interactively add a CLI agent entry
-- **Remove an agent** — remove an agent from the configuration
-- **Open agents.json** — edit the configuration file directly
+- **View agent details** â€” shows description, install/update commands, and config file locations
+- **Add a new agent** â€” interactively add a CLI agent entry
+- **Remove an agent** â€” remove an agent from the configuration
+- **Open agents.json** â€” edit the configuration file directly
 
 ## Configuration
 
@@ -87,7 +87,7 @@ Agents are defined in `agents.json`:
 
 ### Adding a custom agent
 
-Either use **Settings → Add a new agent** from the menu, or add an entry to `agents.json`:
+Either use **Settings â†’ Add a new agent** from the menu, or add an entry to `agents.json`:
 
 ```json
 {
@@ -102,13 +102,14 @@ Either use **Settings → Add a new agent** from the menu, or add an entry to `a
 
 ## Safety
 
-- **No automatic updates** — all updates require explicit confirmation
-- **No credential exposure** — API keys and tokens are never read or displayed
-- **No background services** — runs only when you launch it
-- **No network calls** — only executes local CLI commands
+- **No automatic updates** â€” all updates require explicit confirmation
+- **No credential exposure** â€” API keys and tokens are never read or displayed
+- **No background services** â€” runs only when you launch it
+- **No network calls** â€” only executes local CLI commands
 
 ## Requirements
 
 - Python 3.10+
 - Windows 11 / PowerShell
 - [Rich](https://github.com/Textualize/rich) (installed via `requirements.txt`)
+
