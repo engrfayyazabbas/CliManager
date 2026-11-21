@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -31,14 +32,14 @@ from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Prompt
 from rich.text import Text
 from rich import box
 
 # ---------------------------------------------------------------------------
 # Metadata & Styling Constants
 # ---------------------------------------------------------------------------
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 APP_NAME = "AgentHub"
 CONSOLE = Console()
 
@@ -245,7 +246,27 @@ AGENT_CATALOG: list[dict[str, Any]] = [
 
 def default_config() -> dict[str, Any]:
     """Return a fresh starter config (empty — auto-sync fills it on startup)."""
-    return {"agents": []}
+    return {"agents": [], "ignored": []}
+
+
+def hidden_commands(config: dict[str, Any]) -> set[str]:
+    """Commands the user chose to hide from AgentHub."""
+    return {
+        str(cmd).strip().lower()
+        for cmd in config.get("ignored", [])
+        if str(cmd).strip()
+    }
+
+
+def set_agent_hidden(config: dict[str, Any], command: str, hidden: bool) -> None:
+    """Add or remove a command from the hidden list (persisted by the caller)."""
+    commands = hidden_commands(config)
+    cmd = command.strip().lower()
+    if hidden:
+        commands.add(cmd)
+    else:
+        commands.discard(cmd)
+    config["ignored"] = sorted(commands)
 
 
 def get_config_path() -> Path:
@@ -293,7 +314,10 @@ def load_config() -> tuple[dict[str, Any], Path]:
     if cfg_path.exists():
         try:
             with open(cfg_path, "r", encoding="utf-8") as f:
-                return json.load(f), cfg_path
+                config = json.load(f)
+            config.setdefault("agents", [])
+            config.setdefault("ignored", [])
+            return config, cfg_path
         except Exception as e:
             CONSOLE.print(f"[yellow]Warning:[/yellow] Could not read {cfg_path} ({e}). Using defaults.")
     return default_config(), cfg_path
@@ -367,10 +391,13 @@ def expand_path(path_str: str) -> str:
 
 
 def detect_agents(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Enrich agent configurations with live detection status."""
+    """Enrich agent configurations with live detection status (hidden agents skipped)."""
+    ignored = hidden_commands(config)
     enriched = []
     for entry in config.get("agents", []):
         cmd = entry.get("command", "")
+        if str(cmd).strip().lower() in ignored:
+            continue
         exe = find_executable(cmd)
         installed = exe is not None
         version = get_version(cmd) if installed else "—"
@@ -524,6 +551,7 @@ def merge_discovered_agents(
     Returns (config, added_names, enriched_names).
     """
     agents: list[dict[str, Any]] = config.setdefault("agents", [])
+    ignored = hidden_commands(config)
     index = {str(a.get("command", "")).strip().lower(): a for a in agents}
     added: list[str] = []
     enriched: list[str] = []
@@ -535,6 +563,8 @@ def merge_discovered_agents(
 
         candidates = [command.lower()]
         candidates += [str(a).strip().lower() for a in entry.get("aliases") or [] if a]
+        if any(c in ignored for c in candidates):
+            continue
         existing = next((index[c] for c in candidates if c in index), None)
 
         if existing is not None:
@@ -824,7 +854,7 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
 
     items.append(("Sync & refresh", "refresh", None, "r"))
     items.append(("Doctor", "doctor", None, "d"))
-    items.append(("Update", "update", None, "u"))
+    items.append(("Update all agents", "update", None, "u"))
     items.append(("Settings", "settings", None, "s"))
     items.append(("Quit", "exit", None, "q"))
 
@@ -856,6 +886,119 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
                 for _, kind, idx, shortcut in items:
                     if shortcut and key == shortcut.lower():
                         return f"{kind}:{idx}" if idx is not None else kind
+
+# ---------------------------------------------------------------------------
+# Shared Sub-Menu Components (used by Update / Settings)
+# ---------------------------------------------------------------------------
+
+def _submenu_render(
+    title: str,
+    options: list[tuple[str, str, str]],
+    selected: int,
+    subtitle: str,
+    footer: str,
+) -> Panel:
+    """Render a keyboard-driven sub-menu in the same style as the main menu."""
+    lines: list[Text] = []
+    if subtitle:
+        lines.append(Text(subtitle, style=COLOR_MUTED))
+        lines.append(Text(""))
+
+    for i, (_key, label, hint) in enumerate(options):
+        row = Text(no_wrap=True)
+        if i == selected:
+            row.append("❯ ", style=f"bold {COLOR_PRIMARY}")
+            row.append(f"{label:<28}", style=f"bold white on {COLOR_PRIMARY}")
+            if hint:
+                row.append(f" {hint}", style=f"white on {COLOR_PRIMARY}")
+        else:
+            row.append("  ")
+            row.append(f"{label:<28}", style="white")
+            if hint:
+                row.append(f" {hint}", style=COLOR_MUTED)
+        lines.append(row)
+
+    body = Text("\n").join(lines)
+    body.append("\n\n")
+    body.append(footer, style=COLOR_MUTED)
+    return Panel(
+        body,
+        title=f"[bold {COLOR_PRIMARY}]{title}[/bold {COLOR_PRIMARY}]",
+        box=box.ROUNDED,
+        border_style=COLOR_SECONDARY,
+        padding=(1, 1),
+    )
+
+
+def pick_from_menu(
+    title: str,
+    options: list[tuple[str, str, str]],
+    *,
+    subtitle: str = "",
+    footer: str = "↑↓ move · Enter select · 1-9 jump · q back",
+) -> str:
+    """Keyboard-driven selection. Returns the option key, or "back"."""
+    if not options:
+        return "back"
+
+    selected = 0
+    total = len(options)
+
+    CONSOLE.clear()
+    with Live(
+        _submenu_render(title, options, selected, subtitle, footer),
+        console=CONSOLE,
+        auto_refresh=False,
+        transient=True,
+    ) as live:
+        while True:
+            key = read_navigation_key()
+
+            if key in ("up", "k"):
+                selected = (selected - 1) % total
+                live.update(_submenu_render(title, options, selected, subtitle, footer), refresh=True)
+            elif key in ("down", "j"):
+                selected = (selected + 1) % total
+                live.update(_submenu_render(title, options, selected, subtitle, footer), refresh=True)
+            elif key == "enter":
+                return options[selected][0]
+            elif key in ("q", "escape"):
+                return "back"
+            elif key.isdigit() and 1 <= int(key) <= total:
+                selected = int(key) - 1
+                live.update(_submenu_render(title, options, selected, subtitle, footer), refresh=True)
+            else:
+                for option_key, _label, _hint in options:
+                    if len(option_key) == 1 and key == option_key.lower():
+                        return option_key
+
+    return "back"
+
+
+def confirm_panel(title: str, message: str, *, danger: bool = False) -> bool:
+    """Single-key confirmation panel. Enter/y confirms, q/n/Esc cancels."""
+    CONSOLE.clear()
+    CONSOLE.print(Panel(
+        message,
+        title=f"[bold {COLOR_MISSING if danger else COLOR_PRIMARY}]{title}[/bold {COLOR_MISSING if danger else COLOR_PRIMARY}]",
+        box=box.ROUNDED,
+        border_style=COLOR_MISSING if danger else COLOR_PRIMARY,
+        padding=(1, 2),
+    ))
+    CONSOLE.print(f"[{COLOR_MUTED}]Enter / y to confirm  ·  q / n to cancel[/{COLOR_MUTED}]")
+    while True:
+        key = read_navigation_key()
+        if key in ("enter", "y"):
+            return True
+        if key in ("q", "n", "escape"):
+            return False
+
+
+def pause(message: str = "Press any key to return") -> None:
+    """Wait for a single keypress instead of a full line prompt."""
+    CONSOLE.print(f"[{COLOR_MUTED}]{message}[/{COLOR_MUTED}]", end="")
+    read_navigation_key()
+    CONSOLE.print()
 
 # ---------------------------------------------------------------------------
 # Agent Execution & Diagnostics
@@ -984,89 +1127,278 @@ def run_doctor(agents: list[dict[str, Any]], config_path: Path, interactive: boo
         )
 
     if interactive:
-        Prompt.ask("\nPress Enter to return to menu", default="")
+        pause()
 
 
-def update_agents_wizard(agents: list[dict[str, Any]]) -> None:
-    """Interactive updater for installed agents."""
-    CONSOLE.clear()
-    CONSOLE.print(Panel(
-        f"[bold {COLOR_PRIMARY}]AgentHub Updater[/bold {COLOR_PRIMARY}]\n"
-        f"Safely inspect and run updates for installed agents. No command runs without confirmation.",
+def updatable_agents(agents: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Installed agents that declare an update command."""
+    return [
+        a for a in agents
+        if a.get("installed") and str(a.get("update_method", "")).strip()
+    ]
+
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def _output_tail(output: str, lines: int = 4) -> str:
+    """Last few meaningful lines of captured command output."""
+    cleaned = _ANSI_RE.sub("", output or "")
+    rows = [line.rstrip() for line in cleaned.splitlines() if line.strip()]
+    return "\n".join(rows[-lines:]) if rows else "(no output)"
+
+
+def _update_preview(targets: list[dict[str, Any]]) -> Table:
+    table = Table(box=box.SIMPLE_HEAD, header_style=f"bold {COLOR_PRIMARY}", pad_edge=False)
+    table.add_column("#", style=COLOR_MUTED, width=3, justify="right")
+    table.add_column("Agent", style="bold white")
+    table.add_column("Command", style=COLOR_CYAN)
+    table.add_column("Version", style=COLOR_MUTED)
+    table.add_column("Update command", style=COLOR_ACCENT)
+    for i, agent in enumerate(targets, 1):
+        table.add_row(
+            str(i),
+            agent["name"],
+            agent["command"],
+            str(agent["version"]),
+            str(agent.get("update_method", "")),
+        )
+    return table
+
+
+def _update_progress(
+    targets: list[dict[str, Any]],
+    states: dict[str, dict[str, Any]],
+) -> Panel:
+    table = Table(box=box.SIMPLE_HEAD, header_style=f"bold {COLOR_PRIMARY}", pad_edge=False)
+    table.add_column("Agent", style="bold white")
+    table.add_column("Command", style=COLOR_CYAN)
+    table.add_column("Status", min_width=24)
+
+    for agent in targets:
+        state = states.get(agent["command"], {})
+        status = state.get("state", "pending")
+        duration = state.get("duration", 0.0)
+        if status == "running":
+            label = f"[{COLOR_ACCENT}]◐ running…[/{COLOR_ACCENT}]"
+        elif status == "done":
+            label = f"[{COLOR_READY}]✓ updated[/{COLOR_READY}] [{COLOR_MUTED}]{duration:.1f}s[/{COLOR_MUTED}]"
+        elif status == "failed":
+            label = f"[{COLOR_MISSING}]✗ failed[/{COLOR_MISSING}] [{COLOR_MUTED}]{duration:.1f}s[/{COLOR_MUTED}]"
+        else:
+            label = f"[{COLOR_MUTED}]· waiting[/{COLOR_MUTED}]"
+        table.add_row(agent["name"], agent["command"], label)
+
+    return Panel(
+        Group(
+            Text(f"Updating {len(targets)} agent(s) in one batch — no per-agent prompts.", style=COLOR_MUTED),
+            Text(""),
+            table,
+        ),
+        title=f"[bold {COLOR_PRIMARY}]AgentHub — Updating[/bold {COLOR_PRIMARY}]",
         box=box.ROUNDED,
-        border_style=COLOR_PRIMARY
-    ))
+        border_style=COLOR_PRIMARY,
+    )
 
-    installed = [a for a in agents if a["installed"]]
-    if not installed:
-        CONSOLE.print(f"[{COLOR_MISSING}]No agents are currently installed to update.[/{COLOR_MISSING}]")
-        Prompt.ask("\nPress Enter to return", default="")
+
+def update_agents_wizard(agents: list[dict[str, Any]], *, prompt_return: bool = True) -> None:
+    """Update every installed agent in one batch, with a single confirmation."""
+    targets = updatable_agents(agents)
+    CONSOLE.clear()
+
+    if not targets:
+        CONSOLE.print(Panel(
+            f"[bold white]Nothing to update.[/bold white]\n\n"
+            f"[{COLOR_MUTED}]No installed agent has an update command configured. "
+            f"Install or register an agent first.[/{COLOR_MUTED}]",
+            title=f"[bold {COLOR_PRIMARY}]AgentHub Updater[/bold {COLOR_PRIMARY}]",
+            box=box.ROUNDED,
+            border_style=COLOR_PRIMARY,
+        ))
+        if prompt_return:
+            pause()
         return
 
-    for a in installed:
-        method = a.get("update_method", "")
-        CONSOLE.print(f"\n[bold white]{a['name']}[/bold white] (Command: [cyan]{a['command']}[/cyan])")
-        CONSOLE.print(f"  Current Version: [{COLOR_ACCENT}]{a['version']}[/{COLOR_ACCENT}]")
-        CONSOLE.print(f"  Binary Location: [dim]{a['exe_path']}[/dim]")
+    CONSOLE.print(Panel(
+        Group(
+            Text("These update commands will run one after another:", style="bold white"),
+            Text(""),
+            _update_preview(targets),
+        ),
+        title=f"[bold {COLOR_PRIMARY}]AgentHub Updater[/bold {COLOR_PRIMARY}]",
+        box=box.ROUNDED,
+        border_style=COLOR_PRIMARY,
+    ))
+    CONSOLE.print()
 
-        if not method:
-            CONSOLE.print(f"  [dim]No update command configured. Check provider website.[/dim]")
-            continue
+    if not confirm_panel(
+        "Update all agents?",
+        f"Run [bold yellow]{len(targets)}[/bold yellow] update command(s) now?\n\n"
+        f"[{COLOR_MUTED}]Updates are sequential. You can leave this screen while they run.[/{COLOR_MUTED}]",
+    ):
+        CONSOLE.print(f"[{COLOR_MUTED}]Update cancelled.[/{COLOR_MUTED}]")
+        if prompt_return:
+            pause()
+        return
 
-        CONSOLE.print(f"  Update Command:  [bold yellow]{method}[/bold yellow]")
-        if Confirm.ask("  Run this update now?", default=False):
-            CONSOLE.print(f"  [yellow]Executing: {method}...[/yellow]")
+    states = {
+        agent["command"]: {"state": "pending", "duration": 0.0}
+        for agent in targets
+    }
+    results: list[tuple[dict[str, Any], bool, float, str]] = []
+
+    with Live(
+        _update_progress(targets, states),
+        console=CONSOLE,
+        refresh_per_second=8,
+        transient=False,
+    ) as live:
+        for agent in targets:
+            states[agent["command"]]["state"] = "running"
+            live.update(_update_progress(targets, states), refresh=True)
+
+            started = time.monotonic()
             try:
-                subprocess.run(method, shell=True, cwd=os.getcwd())
-                CONSOLE.print(f"  [{COLOR_READY}]✓ Update completed.[/{COLOR_READY}]")
-            except Exception as e:
-                CONSOLE.print(f"  [{COLOR_MISSING}]Update error: {e}[/{COLOR_MISSING}]")
-        else:
-            CONSOLE.print("  [dim]Skipped.[/dim]")
+                proc = subprocess.run(
+                    agent["update_method"],
+                    shell=True,
+                    cwd=os.getcwd(),
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                ok = proc.returncode == 0
+                output = ((proc.stdout or "") + "\n" + (proc.stderr or "")).strip()
+            except Exception as exc:
+                ok = False
+                output = str(exc)
 
-    Prompt.ask("\nPress Enter to return to menu", default="")
+            duration = time.monotonic() - started
+            states[agent["command"]].update({
+                "state": "done" if ok else "failed",
+                "duration": duration,
+            })
+            live.update(_update_progress(targets, states), refresh=True)
+            results.append((agent, ok, duration, output))
+
+    succeeded = [r for r in results if r[1]]
+    failed = [r for r in results if not r[1]]
+
+    CONSOLE.print()
+    summary_style = COLOR_READY if not failed else COLOR_ACCENT
+    CONSOLE.print(
+        f"[bold {summary_style}]Batch finished:[/bold {summary_style}] "
+        f"[{COLOR_READY}]{len(succeeded)} updated[/{COLOR_READY}] · "
+        f"[{COLOR_MISSING}]{len(failed)} failed[/{COLOR_MISSING}]"
+    )
+    for agent, _ok, duration, _output in succeeded:
+        CONSOLE.print(f"  [{COLOR_READY}]✓[/{COLOR_READY}] {agent['name']} [{COLOR_MUTED}]({duration:.1f}s)[/{COLOR_MUTED}]")
+    for agent, _ok, duration, output in failed:
+        CONSOLE.print(f"  [{COLOR_MISSING}]✗[/{COLOR_MISSING}] {agent['name']} [{COLOR_MUTED}]({duration:.1f}s)[/{COLOR_MUTED}]")
+        CONSOLE.print(Panel(
+            Text(_output_tail(output, 6)),
+            title=f"[bold {COLOR_MISSING}]{agent['name']} — last output[/bold {COLOR_MISSING}]",
+            box=box.ROUNDED,
+            border_style=COLOR_MISSING,
+            padding=(0, 1),
+        ))
+
+    if prompt_return:
+        pause()
 
 # ---------------------------------------------------------------------------
 # Settings & Configuration Sub-Menu
 # ---------------------------------------------------------------------------
 
 def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
-    """Settings and agent configuration editor."""
+    """Simplified settings screen using the shared keyboard-driven menu."""
     while True:
-        CONSOLE.clear()
-        CONSOLE.print(Panel(
-            f"[bold {COLOR_PRIMARY}]AgentHub Settings & Configuration[/bold {COLOR_PRIMARY}]\n"
-            f"Active config file: [bold cyan]{config_path}[/bold cyan]",
-            box=box.ROUNDED,
-            border_style=COLOR_PRIMARY
-        ))
+        agents = detect_agents(config)
+        hidden = hidden_commands(config)
 
-        CONSOLE.print("  [bold white]1.[/bold white] View agent details and configuration locations")
-        CONSOLE.print("  [bold white]2.[/bold white] Remove an agent")
-        CONSOLE.print("  [bold white]3.[/bold white] Open config file in default editor")
-        CONSOLE.print("  [bold white]4.[/bold white] Reset configuration to default")
-        CONSOLE.print("  [bold white]5.[/bold white] Show catalog agents not installed")
-        CONSOLE.print("  [bold white]6.[/bold white] Back to main menu")
+        choice = pick_from_menu(
+            "Settings",
+            [
+                ("details", "Agent details", f"{len(agents)} visible"),
+                ("visibility", "Show / hide agents", f"{len(hidden)} hidden"),
+                ("open", "Open config file", ""),
+                ("reset", "Reset & re-detect", "clears hidden list"),
+                ("back", "Back", ""),
+            ],
+            subtitle=f"Config: {config_path}",
+        )
 
-        choice = Prompt.ask("\n  Select option", choices=["1", "2", "3", "4", "5", "6"], default="6")
+        if choice == "back":
+            return config
 
-        if choice == "1":
-            show_agent_details(detect_agents(config))
-        elif choice == "2":
-            config = remove_agent_wizard(config, config_path)
-        elif choice == "3":
+        if choice == "details":
+            show_agent_details(agents)
+        elif choice == "visibility":
+            config = manage_visibility(config, config_path)
+        elif choice == "open":
             open_config_file(config_path)
-        elif choice == "4":
-            if Confirm.ask("  Are you sure you want to reset config to default?", default=False):
+        elif choice == "reset":
+            if confirm_panel(
+                "Reset configuration?",
+                "This clears the agent list and the hidden list.\n"
+                "Installed agents are detected again on the next sync.",
+                danger=True,
+            ):
                 config = default_config()
-                save_config(config, config_path)
-                Prompt.ask("\n  Config reset. Press Enter", default="")
-        elif choice == "5":
-            show_catalog_agents()
-        elif choice == "6":
-            break
+                save_config(config, config_path, quiet=True)
+                config, _added = sync_config(config, config_path)
+                CONSOLE.clear()
+                CONSOLE.print(f"[{COLOR_READY}]✓ Configuration reset and re-detected.[/{COLOR_READY}]")
+                pause()
 
-    return config
+
+def manage_visibility(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Toggle which agents appear in AgentHub. Hidden agents survive auto-sync."""
+    while True:
+        hidden = hidden_commands(config)
+        found, _missing = discover_agents()
+
+        entries: dict[str, dict[str, Any]] = {}
+        for agent in config.get("agents", []):
+            command = str(agent.get("command", "")).strip().lower()
+            if command:
+                entries[command] = agent
+        for agent in found:
+            command = str(agent.get("command", "")).strip().lower()
+            entries.setdefault(command, agent)
+
+        if not entries:
+            CONSOLE.clear()
+            CONSOLE.print(Panel(
+                f"[bold white]No agents detected yet.[/bold white]\n\n"
+                f"[{COLOR_MUTED}]Install an agent CLI and run sync, then come back here.[/{COLOR_MUTED}]",
+                title=f"[bold {COLOR_PRIMARY}]Show / hide agents[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+            pause()
+            return config
+
+        options: list[tuple[str, str, str]] = []
+        for command in sorted(entries, key=lambda c: str(entries[c].get("name", c)).lower()):
+            entry = entries[command]
+            state = "hidden" if command in hidden else "visible"
+            installed = "installed" if find_executable(command) else "not installed"
+            options.append((command, str(entry.get("name", command)), f"{state} · {installed}"))
+        options.append(("back", "Back", ""))
+
+        choice = pick_from_menu(
+            "Show / hide agents",
+            options,
+            subtitle="Enter toggles an agent · hidden agents are skipped by auto-sync",
+        )
+
+        if choice == "back":
+            return config
+
+        set_agent_hidden(config, choice, choice not in hidden)
+        save_config(config, config_path, quiet=True)
 
 
 def show_agent_details(agents: list[dict[str, Any]]) -> None:
@@ -1099,39 +1431,7 @@ def show_agent_details(agents: list[dict[str, Any]]) -> None:
             border_style=COLOR_SECONDARY,
             padding=(0, 2)
         ))
-    Prompt.ask("\nPress Enter to return", default="")
-
-
-def show_catalog_agents() -> None:
-    """List catalog agents that are not currently installed, with install commands."""
-    CONSOLE.clear()
-    CONSOLE.print(f"[bold {COLOR_PRIMARY}]Agent Catalog — Available to Install[/bold {COLOR_PRIMARY}]\n")
-
-    found, missing = discover_agents()
-    CONSOLE.print(f"[{COLOR_MUTED}]{len(found)} of {len(found) + len(missing)} catalog agents detected on this machine.[/{COLOR_MUTED}]\n")
-
-    if not missing:
-        CONSOLE.print(f"[{COLOR_READY}]✓ Every catalog agent is already installed.[/{COLOR_READY}]")
-    else:
-        table = Table(box=box.SIMPLE_HEAD, header_style=f"bold {COLOR_PRIMARY}")
-        table.add_column("Agent", style="bold white")
-        table.add_column("Command", style=COLOR_CYAN)
-        table.add_column("Description", style=COLOR_MUTED)
-        table.add_column("Install", style=COLOR_ACCENT)
-        for entry in missing:
-            table.add_row(
-                entry.get("name", ""),
-                entry.get("command", ""),
-                entry.get("description", ""),
-                entry.get("install_method", ""),
-            )
-        CONSOLE.print(table)
-        CONSOLE.print(
-            f"\n[{COLOR_MUTED}]Install one, then run [bold]agenthub sync[/bold] (or press r in the menu) "
-            f"to pick it up automatically.[/{COLOR_MUTED}]"
-        )
-
-    Prompt.ask("\nPress Enter to return", default="")
+    pause()
 
 
 def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
@@ -1161,36 +1461,7 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
     return config
 
 
-def remove_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
-    """Interactive removal of an agent."""
-    agents = config.get("agents", [])
-    if not agents:
-        CONSOLE.print("[dim]No agents to remove.[/dim]")
-        Prompt.ask("\nPress Enter to return", default="")
-        return config
-
-    CONSOLE.print(f"\n[bold {COLOR_PRIMARY}]Remove Agent[/bold {COLOR_PRIMARY}]\n")
-    for i, a in enumerate(agents, 1):
-        CONSOLE.print(f"  [bold white]{i}.[/bold white] {a['name']} (`{a['command']}`)")
-
-    raw = Prompt.ask("\nEnter number of agent to remove (0 to cancel)", default="0")
-    try:
-        idx = int(raw)
-        if 1 <= idx <= len(agents):
-            target = agents[idx - 1]
-            if Confirm.ask(f"Remove [bold]{target['name']}[/bold]?", default=False):
-                agents.pop(idx - 1)
-                save_config(config, config_path)
-                CONSOLE.print(f"[{COLOR_READY}]✓ Removed {target['name']}[/{COLOR_READY}]")
-            else:
-                CONSOLE.print("[dim]Cancelled.[/dim]")
-    except ValueError:
-        pass
-    Prompt.ask("\nPress Enter to continue", default="")
-    return config
-
-
-def open_config_file(config_path: Path) -> None:
+def open_config_file(config_path: Path, *, pause_return: bool = True) -> None:
     """Open config file in the user's default system editor."""
     try:
         if sys.platform == "win32":
@@ -1202,7 +1473,8 @@ def open_config_file(config_path: Path) -> None:
         CONSOLE.print(f"[{COLOR_READY}]Opened {config_path}[/{COLOR_READY}]")
     except Exception as e:
         CONSOLE.print(f"[dim]Please open manually: {config_path} ({e})[/dim]")
-    Prompt.ask("\nPress Enter to continue", default="")
+    if pause_return:
+        pause()
 
 # ---------------------------------------------------------------------------
 # CLI Argument Dispatcher
@@ -1343,12 +1615,12 @@ def main() -> None:
             target = args.agent.strip().lower()
             matched = [a for a in agents if a["command"].lower() == target or a["name"].lower() == target]
             if matched:
-                update_agents_wizard(matched)
+                update_agents_wizard(matched, prompt_return=False)
             else:
                 CONSOLE.print(f"[{COLOR_MISSING}]Agent '{args.agent}' not found.[/{COLOR_MISSING}]")
                 sys.exit(1)
         else:
-            update_agents_wizard(agents)
+            update_agents_wizard(agents, prompt_return=False)
         return
 
     if args.subcommand == "add":
@@ -1360,7 +1632,7 @@ def main() -> None:
             print(str(config_path))
             return
         if args.open:
-            open_config_file(config_path)
+            open_config_file(config_path, pause_return=False)
             return
         CONSOLE.print(f"[bold white]Active Config Path:[/] [cyan]{config_path}[/cyan]")
         return
@@ -1381,7 +1653,7 @@ def main() -> None:
             agents = detect_agents(config)
             if not added:
                 CONSOLE.print(f"[{COLOR_MUTED}]✓ Up to date — no new agents discovered.[/{COLOR_MUTED}]")
-            Prompt.ask("\nPress Enter to continue", default="")
+            pause()
         elif action == "doctor":
             run_doctor(agents, config_path, interactive=True)
         elif action == "update":

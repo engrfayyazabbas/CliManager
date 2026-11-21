@@ -28,6 +28,9 @@ from agenthub import (
     sync_config,
     default_config,
     ensure_search_path,
+    hidden_commands,
+    set_agent_hidden,
+    updatable_agents,
     VERSION,
 )
 
@@ -175,14 +178,48 @@ assert len(cfg2["agents"]) == len(saved["agents"])
 print(f"✓ sync_config: persisted {len(saved['agents'])} agent(s), idempotent")
 
 # ---------------------------------------------------------------------------
-# 7. Default config is empty (auto-sync fills it) and independent copies
+# 7. Hidden agents: survive auto-sync, filtered from detection
 # ---------------------------------------------------------------------------
-assert default_config() == {"agents": []}
+assert default_config() == {"agents": [], "ignored": []}
 assert default_config() is not default_config()
-print("✓ Default config: empty starter, fresh copy")
+
+cfg = {"agents": [{"name": "Aider", "command": "aider"}], "ignored": []}
+set_agent_hidden(cfg, "AIDER", True)
+assert hidden_commands(cfg) == {"aider"}
+assert detect_agents(cfg) == [], "Hidden agent was not filtered from detection"
+
+merged, added, _ = merge_discovered_agents(
+    cfg,
+    [{
+        "name": "Aider",
+        "command": "aider",
+        "description": "AI pair programming in your terminal",
+        "install_method": "pip install aider-chat",
+        "update_method": "pip install --upgrade aider-chat",
+        "config_locations": ["~/.aider.conf.yml"],
+    }],
+)
+assert added == [], "Hidden agent was re-added by auto-sync"
+assert len(merged["agents"]) == 1, "Hidden agent entry should be preserved, not deleted"
+
+set_agent_hidden(merged, "aider", False)
+assert hidden_commands(merged) == set()
+assert len(detect_agents(merged)) == 1, "Unhidden agent did not reappear"
+print("✓ Hidden agents: filtered, skipped by sync, restorable")
 
 # ---------------------------------------------------------------------------
-# 8. Parser: --no-sync flag and sync subcommand
+# 8. Batch update target selection
+# ---------------------------------------------------------------------------
+candidates = [
+    {"name": "A", "command": "a", "installed": True, "update_method": "a --update"},
+    {"name": "B", "command": "b", "installed": False, "update_method": "b --update"},
+    {"name": "C", "command": "c", "installed": True, "update_method": ""},
+]
+assert [a["command"] for a in updatable_agents(candidates)] == ["a"]
+print("✓ Batch update: only installed agents with update commands")
+
+# ---------------------------------------------------------------------------
+# 9. Parser: --no-sync flag and sync subcommand
 # ---------------------------------------------------------------------------
 parser = build_parser()
 
@@ -205,7 +242,68 @@ assert args.subcommand == "doctor"
 print("✓ Parser: sync, --no-sync, launch, doctor")
 
 # ---------------------------------------------------------------------------
-# 9. Smoke test on the live machine config
+# 10. Shared sub-menu + batch update UI (mocked, no real key/command execution)
+# ---------------------------------------------------------------------------
+import io
+import types
+import agenthub
+from rich.console import Console
+
+_orig_console = agenthub.CONSOLE
+_orig_key = agenthub.read_navigation_key
+agenthub.CONSOLE = Console(file=io.StringIO(), force_terminal=False, width=100)
+
+try:
+    keys = iter(["down", "enter"])
+    agenthub.read_navigation_key = lambda: next(keys)
+    picked = agenthub.pick_from_menu(
+        "Test",
+        [("a", "First", ""), ("b", "Second", ""), ("back", "Back", "")],
+    )
+    assert picked == "b", f"Arrow + Enter navigation failed: {picked}"
+
+    keys = iter(["q"])
+    agenthub.read_navigation_key = lambda: next(keys)
+    picked = agenthub.pick_from_menu("Test", [("a", "First", "")])
+    assert picked == "back", f"q did not go back: {picked}"
+
+    assert agenthub._output_tail("\x1b[31mhello\x1b[0m") == "hello"
+
+    _orig_run = agenthub.subprocess.run
+    _orig_confirm = agenthub.confirm_panel
+    _orig_pause = agenthub.pause
+    executed: list[str] = []
+
+    def fake_run(command, **_kwargs):
+        executed.append(command)
+        return types.SimpleNamespace(returncode=0, stdout="updated ok", stderr="")
+
+    agenthub.subprocess.run = fake_run
+    agenthub.confirm_panel = lambda *_a, **_k: True
+    agenthub.pause = lambda *_a, **_k: None
+
+    try:
+        agenthub.update_agents_wizard(
+            [
+                {"name": "A", "command": "a", "installed": True, "version": "1.0", "update_method": "a --update"},
+                {"name": "B", "command": "b", "installed": True, "version": "2.0", "update_method": "b --update"},
+            ],
+            prompt_return=False,
+        )
+    finally:
+        agenthub.subprocess.run = _orig_run
+        agenthub.confirm_panel = _orig_confirm
+        agenthub.pause = _orig_pause
+
+    assert executed == ["a --update", "b --update"], f"Batch update ran: {executed}"
+finally:
+    agenthub.CONSOLE = _orig_console
+    agenthub.read_navigation_key = _orig_key
+
+print("✓ UI: sub-menu navigation, q-back, ANSI cleanup, one batch update run")
+
+# ---------------------------------------------------------------------------
+# 11. Smoke test on the live machine config
 # ---------------------------------------------------------------------------
 ensure_search_path()
 cfg, cfg_path = load_config()

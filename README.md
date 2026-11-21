@@ -11,7 +11,7 @@
 
 ```text
 ┌──────────────────────────────────────────┐
-│  ✳ AgentHub  v1.2.0  ·  3/3 ready        │
+│  ✳ AgentHub  v1.3.0  ·  3/3 ready        │
 └──────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────┐
@@ -89,8 +89,8 @@ This launches the interactive mission control. On startup AgentHub **auto-syncs*
 - Press **1 - 9** (or use **↑ / ↓** and **Enter**) to launch any installed AI agent directly in the current directory.
 - Press **r** to sync and refresh (re-scan for newly installed agents).
 - Press **d** to run AgentHub Doctor.
-- Press **u** to check for and apply updates.
-- Press **s** to view settings, configuration paths, and the catalog of installable agents.
+- Press **u** to update all installed agents in one batch (one confirmation).
+- Press **s** for settings: agent details, show/hide agents, config file, reset.
 - Press **q** to exit.
 
 ### 2. Direct CLI Subcommands
@@ -116,8 +116,11 @@ agenthub launch 1
 # Run system & environment health diagnostics (+ install suggestions)
 agenthub doctor
 
-# Interactive update wizard for installed agents
+# Run every installed agent's update command in one batch
 agenthub update
+
+# Update a single agent (still one confirmation)
+agenthub update codex
 
 # Add a custom agent that isn't in the catalog (CLI-only escape hatch)
 agenthub add
@@ -141,15 +144,33 @@ agenthub config --open
 | **1 – 9** | **Quick Launch**: immediately launch agent #1 through #9 |
 | **r** | **Sync & refresh**: re-scan PATH and common install dirs, register newly installed agents |
 | **d** | **Doctor**: run environment, PATH, and config diagnostics |
-| **u** | **Update**: check and run update commands with confirmation |
-| **s** | **Settings**: open configuration details and file editor |
+| **u** | **Update all agents**: one preview + one confirmation, then sequential batch update with live progress |
+| **s** | **Settings**: agent details, show/hide agents, config file, reset |
 | **q** or **Esc** | **Quit**: exit AgentHub cleanly |
+
+Sub-screens use the same `↑ / ↓` (or `j / k`), `Enter`, number-jump and `q` controls as the main menu — no more numbered text prompts.
+
+---
+
+## 🛠️ Actions
+
+**Sync & refresh (`r`)** — scans PATH plus common install dirs and registers newly installed agents.
+
+**Doctor (`d`)** — environment/PATH diagnostics, configured-agent status, and a table of catalog agents you haven't installed.
+
+**Update all agents (`u`)** — shows one preview table of every installed agent that has an update command, asks **one** confirmation, then runs all updates sequentially with a live progress table and a final success/failure summary. No per-agent questions. Use `agenthub update <agent>` to target a single agent.
+
+**Settings (`s`)** — four options:
+1. **Agent details** — versions, binary paths, config locations.
+2. **Show / hide agents** — `Enter` toggles visibility. Hidden agents are skipped by auto-sync, so they stay hidden after restarts (stored in the `ignored` list in config).
+3. **Open config file** — opens `agents.json` in your editor.
+4. **Reset & re-detect** — clears agents and the hidden list, then re-scans installed CLIs.
 
 ---
 
 ## 📋 Built-in Agent Catalog
 
-AgentHub ships a catalog of known AI coding agents. On every run it probes each one and **only installed agents are added to your config and shown** — missing ones stay out of the way (view them in `agenthub doctor` or Settings → 6).
+AgentHub ships a catalog of known AI coding agents. On every run it probes each one and **only installed agents are added to your config and shown** — missing ones stay out of the way (see `agenthub doctor`).
 
 | Agent | Command | Typical install |
 |---|---|---|
@@ -188,8 +209,8 @@ On startup (and on `agenthub sync` / pressing **r**) AgentHub:
 
 1. Adds common CLI install dirs to `PATH` for the current process — `%APPDATA%\npm`, `~/.local/bin` (pipx/uv), `~/.bun/bin`, `~/.cargo/bin`, Volta, `/opt/homebrew/bin`, `/usr/local/bin`, and any `NPM_CONFIG_PREFIX`.
 2. Probes every command in the built-in catalog (plus aliases such as `cursor-agent`).
-3. Appends newly found agents to your config, tagged `"source": "catalog"`.
-4. Fills in missing metadata on existing entries — **never overwrites a non-empty field**, and never deletes entries you added or removed.
+3. Appends newly found agents to your config, tagged `"source": "catalog"` — commands in the `ignored` list are skipped.
+4. Fills in missing metadata on existing entries — **never overwrites a non-empty field**, and never deletes entries you added or hid.
 
 Use `agenthub --no-sync <command>` to skip discovery for a single run.
 
@@ -216,7 +237,8 @@ Example `agents.json` (auto-sync output plus a manual entry):
       "config_locations": ["~/.aider.conf.yml"],
       "source": "user"
     }
-  ]
+  ],
+  "ignored": ["copilot"]
 }
 ```
 
@@ -226,7 +248,8 @@ Example `agents.json` (auto-sync output plus a manual entry):
 
 - **No background daemons** — AgentHub runs on-demand and consumes 0 resources when closed.
 - **No telemetry or network tracking** — Only interacts with your local environment and CLI executables.
-- **Explicit confirmation for updates** — No package or tool is updated without your manual confirmation.
+- **One confirmation for the whole update batch** — no package or tool is updated without your manual confirmation.
+- **Hidden agents stay hidden** — the `ignored` list survives auto-sync; nothing is deleted from your config.
 - **Zero credential tampering** — API keys and configuration secrets are never altered or exposed.
 
 ---
