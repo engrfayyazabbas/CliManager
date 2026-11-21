@@ -36,7 +36,7 @@
 - **Simple Terminal UI**: Slim header, clear selection highlight, and short action labels — no clutter.
 - **Installable System CLI**: Install once and run `agenthub` from any directory or terminal, just like `agy`, `codex`, or `gh`.
 - **True Auto-Sync (no manual adding)**: Every launch scans PATH and common install dirs (npm global, pipx/uv, bun, cargo, Volta, Homebrew) for the built-in catalog of 17 AI coding agents. Anything installed is registered and shown automatically — no config editing required.
-- **Interactive Keyboard Controls**: Navigate with **↑ / ↓** or **j / k**, press **1-9** to quick-launch, or use single-letter hotkeys (`r`, `d`, `u`, `a`, `s`, `q`).
+- **Interactive Keyboard Controls**: Navigate with **↑ / ↓** or **j / k**, press **1-9** to quick-launch, or use single-letter hotkeys (`r`, `d`, `u`, `s`, `q`).
 - **Direct CLI Subcommands**: Run `agenthub list`, `agenthub launch agy`, or `agenthub doctor` directly from scripts or shell shortcuts without entering the TUI.
 - **AgentHub Doctor**: Comprehensive diagnostic suite inspecting Python paths, PATH resolution, environment variables, and config locations — plus install suggestions for catalog agents you don't have yet.
 - **Zero Lock-in & Portable Config**: Automatically creates and persists user configuration in `~/.agenthub/agents.json`, with optional project-level `./agents.json` override. User edits are never overwritten by auto-sync.
@@ -90,7 +90,6 @@ This launches the interactive mission control. On startup AgentHub **auto-syncs*
 - Press **r** to sync and refresh (re-scan for newly installed agents).
 - Press **d** to run AgentHub Doctor.
 - Press **u** to check for and apply updates.
-- Press **a** to register a new custom CLI tool that isn't in the catalog.
 - Press **s** to view settings, configuration paths, and the catalog of installable agents.
 - Press **q** to exit.
 
@@ -120,7 +119,7 @@ agenthub doctor
 # Interactive update wizard for installed agents
 agenthub update
 
-# Add a new custom agent (not in the catalog)
+# Add a custom agent that isn't in the catalog (CLI-only escape hatch)
 agenthub add
 
 # Skip auto-discovery for a single run
@@ -143,7 +142,6 @@ agenthub config --open
 | **r** | **Sync & refresh**: re-scan PATH and common install dirs, register newly installed agents |
 | **d** | **Doctor**: run environment, PATH, and config diagnostics |
 | **u** | **Update**: check and run update commands with confirmation |
-| **a** | **Add**: register a new CLI agent interactively |
 | **s** | **Settings**: open configuration details and file editor |
 | **q** or **Esc** | **Quit**: exit AgentHub cleanly |
 

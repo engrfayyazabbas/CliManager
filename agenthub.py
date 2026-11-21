@@ -763,7 +763,7 @@ def build_menu_view(
 
     if agent_count == 0:
         lines.append(Text(
-            "  No agents detected. Press r to scan, a to add manually, d for doctor.",
+            "  No agents detected. Press r to scan, d for doctor.",
             style=COLOR_MUTED,
         ))
 
@@ -825,7 +825,6 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
     items.append(("Sync & refresh", "refresh", None, "r"))
     items.append(("Doctor", "doctor", None, "d"))
     items.append(("Update", "update", None, "u"))
-    items.append(("Add agent", "add", None, "a"))
     items.append(("Settings", "settings", None, "s"))
     items.append(("Quit", "exit", None, "q"))
 
@@ -1043,31 +1042,28 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
         ))
 
         CONSOLE.print("  [bold white]1.[/bold white] View agent details and configuration locations")
-        CONSOLE.print("  [bold white]2.[/bold white] Add a new CLI agent")
-        CONSOLE.print("  [bold white]3.[/bold white] Remove an agent")
-        CONSOLE.print("  [bold white]4.[/bold white] Open config file in default editor")
-        CONSOLE.print("  [bold white]5.[/bold white] Reset configuration to default")
-        CONSOLE.print("  [bold white]6.[/bold white] Show catalog agents not installed")
-        CONSOLE.print("  [bold white]7.[/bold white] Back to main menu")
+        CONSOLE.print("  [bold white]2.[/bold white] Remove an agent")
+        CONSOLE.print("  [bold white]3.[/bold white] Open config file in default editor")
+        CONSOLE.print("  [bold white]4.[/bold white] Reset configuration to default")
+        CONSOLE.print("  [bold white]5.[/bold white] Show catalog agents not installed")
+        CONSOLE.print("  [bold white]6.[/bold white] Back to main menu")
 
-        choice = Prompt.ask("\n  Select option", choices=["1", "2", "3", "4", "5", "6", "7"], default="7")
+        choice = Prompt.ask("\n  Select option", choices=["1", "2", "3", "4", "5", "6"], default="6")
 
         if choice == "1":
             show_agent_details(detect_agents(config))
         elif choice == "2":
-            config = add_agent_wizard(config, config_path)
-        elif choice == "3":
             config = remove_agent_wizard(config, config_path)
-        elif choice == "4":
+        elif choice == "3":
             open_config_file(config_path)
-        elif choice == "5":
+        elif choice == "4":
             if Confirm.ask("  Are you sure you want to reset config to default?", default=False):
                 config = default_config()
                 save_config(config, config_path)
                 Prompt.ask("\n  Config reset. Press Enter", default="")
-        elif choice == "6":
+        elif choice == "5":
             show_catalog_agents()
-        elif choice == "7":
+        elif choice == "6":
             break
 
     return config
@@ -1391,9 +1387,6 @@ def main() -> None:
         elif action == "update":
             update_agents_wizard(agents)
             config, config_path = load_config()
-            agents = detect_agents(config)
-        elif action == "add":
-            config = add_agent_wizard(config, config_path)
             agents = detect_agents(config)
         elif action == "settings":
             config = settings_menu(config, config_path)
