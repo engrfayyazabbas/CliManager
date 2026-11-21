@@ -6,6 +6,7 @@ Detects, displays, inspects, and launches AI coding CLI agents on any platform.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import platform
@@ -37,7 +38,7 @@ from rich import box
 # ---------------------------------------------------------------------------
 # Metadata & Styling Constants
 # ---------------------------------------------------------------------------
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 APP_NAME = "AgentHub"
 CONSOLE = Console()
 
@@ -54,53 +55,197 @@ COLOR_CYAN = "#38bdf8"          # Bright sky cyan
 # Config Management
 # ---------------------------------------------------------------------------
 
-DEFAULT_CONFIG: dict[str, Any] = {
-    "agents": [
-        {
-            "name": "Gemini CLI",
-            "command": "agy",
-            "description": "Google's AI coding assistant CLI (Antigravity)",
-            "install_method": "See documentation for Antigravity / Gemini CLI",
-            "update_method": "agy update",
-            "config_locations": [
-                "%USERPROFILE%\\.gemini",
-                "%USERPROFILE%\\.gemini\\settings.json"
-            ]
-        },
-        {
-            "name": "Codex CLI",
-            "command": "codex",
-            "description": "OpenAI's Codex CLI agent for software engineering",
-            "install_method": "npm install -g @openai/codex",
-            "update_method": "npm update -g @openai/codex",
-            "config_locations": [
-                "%USERPROFILE%\\.codex",
-                "%USERPROFILE%\\.codex\\config.json"
-            ]
-        },
-        {
-            "name": "OpenCode CLI",
-            "command": "opencode",
-            "description": "Open-source AI coding CLI tool",
-            "install_method": "npm install -g opencode-ai",
-            "update_method": "npm update -g opencode-ai",
-            "config_locations": [
-                "%USERPROFILE%\\.opencode"
-            ]
-        },
-        {
-            "name": "Cursor CLI",
-            "command": "agent",
-            "description": "Cursor AI editor CLI interface",
-            "install_method": "Install from https://cursor.com (add to PATH via Cursor settings)",
-            "update_method": "Update via Cursor application or reinstall from https://cursor.com",
-            "config_locations": [
-                "%APPDATA%\\Cursor",
-                "%USERPROFILE%\\.cursor"
-            ]
-        }
-    ]
-}
+# ---------------------------------------------------------------------------
+# Agent Catalog (auto-discovery registry)
+# ---------------------------------------------------------------------------
+# Every entry is probed on PATH during auto-sync. Agents that are installed are
+# merged into the user's config automatically and shown in the UI. Agents that
+# are not installed are skipped (and offered as install suggestions by doctor).
+AGENT_CATALOG: list[dict[str, Any]] = [
+    {
+        "name": "Claude Code",
+        "command": "claude",
+        "description": "Anthropic's agentic coding assistant for the terminal",
+        "install_method": "npm install -g @anthropic-ai/claude-code",
+        "update_method": "npm update -g @anthropic-ai/claude-code",
+        "config_locations": [
+            "~/.claude",
+            "~/.claude/settings.json",
+            "~/.claude.json",
+        ],
+    },
+    {
+        "name": "Codex CLI",
+        "command": "codex",
+        "description": "OpenAI's Codex CLI agent for software engineering",
+        "install_method": "npm install -g @openai/codex",
+        "update_method": "npm update -g @openai/codex",
+        "config_locations": [
+            "~/.codex",
+            "~/.codex/config.json",
+        ],
+    },
+    {
+        "name": "Gemini CLI",
+        "command": "gemini",
+        "description": "Google's open-source terminal AI agent",
+        "install_method": "npm install -g @google/gemini-cli",
+        "update_method": "npm update -g @google/gemini-cli",
+        "config_locations": [
+            "~/.gemini",
+            "~/.gemini/settings.json",
+        ],
+    },
+    {
+        "name": "Antigravity CLI",
+        "command": "agy",
+        "description": "Google Antigravity's terminal coding agent",
+        "install_method": "Install Antigravity from https://antigravity.google",
+        "update_method": "agy update",
+        "config_locations": [
+            "~/.gemini",
+            "~/.gemini/settings.json",
+        ],
+    },
+    {
+        "name": "OpenCode CLI",
+        "command": "opencode",
+        "description": "Open-source AI coding CLI tool",
+        "install_method": "npm install -g opencode-ai",
+        "update_method": "npm update -g opencode-ai",
+        "config_locations": [
+            "~/.opencode",
+            "~/.config/opencode",
+        ],
+    },
+    {
+        "name": "Cursor CLI",
+        "command": "agent",
+        "aliases": ["cursor-agent"],
+        "description": "Cursor AI editor CLI interface",
+        "install_method": "Install from https://cursor.com (add to PATH via Cursor settings)",
+        "update_method": "Update via Cursor application or reinstall from https://cursor.com",
+        "config_locations": [
+            "~/.cursor",
+        ],
+    },
+    {
+        "name": "Aider",
+        "command": "aider",
+        "description": "AI pair programming in your terminal",
+        "install_method": "pip install aider-chat  (or: uv tool install aider-chat)",
+        "update_method": "pip install --upgrade aider-chat  (or: uv tool upgrade aider-chat)",
+        "config_locations": [
+            "~/.aider.conf.yml",
+            "~/.aider",
+        ],
+    },
+    {
+        "name": "Goose",
+        "command": "goose",
+        "description": "Block's open-source, local-first AI agent",
+        "install_method": "See https://block.github.io/goose/docs/getting-started/installation",
+        "update_method": "goose update",
+        "config_locations": [
+            "~/.config/goose",
+        ],
+    },
+    {
+        "name": "Qwen Code",
+        "command": "qwen",
+        "description": "Alibaba's Qwen coding agent CLI",
+        "install_method": "npm install -g @qwen-code/qwen-code",
+        "update_method": "npm update -g @qwen-code/qwen-code",
+        "config_locations": [
+            "~/.qwen",
+        ],
+    },
+    {
+        "name": "Crush",
+        "command": "crush",
+        "description": "Charm's glamorous terminal AI coding agent",
+        "install_method": "npm install -g @charmland/crush",
+        "update_method": "npm update -g @charmland/crush",
+        "config_locations": [
+            "~/.config/crush",
+        ],
+    },
+    {
+        "name": "Amp",
+        "command": "amp",
+        "description": "Sourcegraph Amp coding agent",
+        "install_method": "npm install -g @sourcegraph/amp",
+        "update_method": "npm update -g @sourcegraph/amp",
+        "config_locations": [
+            "~/.config/amp",
+        ],
+    },
+    {
+        "name": "Factory Droid",
+        "command": "droid",
+        "description": "Factory's software engineering agent CLI",
+        "install_method": "See https://docs.factory.ai",
+        "update_method": "droid update",
+        "config_locations": [
+            "~/.factory",
+        ],
+    },
+    {
+        "name": "OpenHands",
+        "command": "openhands",
+        "description": "Open-source autonomous software engineering agent",
+        "install_method": "uv tool install openhands  (or: pip install openhands-ai)",
+        "update_method": "uv tool upgrade openhands",
+        "config_locations": [
+            "~/.openhands",
+        ],
+    },
+    {
+        "name": "GitHub Copilot CLI",
+        "command": "copilot",
+        "description": "GitHub Copilot's terminal agent",
+        "install_method": "npm install -g @github/copilot",
+        "update_method": "npm update -g @github/copilot",
+        "config_locations": [
+            "~/.config/github-copilot",
+        ],
+    },
+    {
+        "name": "Continue CLI",
+        "command": "cn",
+        "description": "Continue's terminal coding agent",
+        "install_method": "npm install -g @continuedev/cli",
+        "update_method": "npm update -g @continuedev/cli",
+        "config_locations": [
+            "~/.continue",
+        ],
+    },
+    {
+        "name": "Codebuff",
+        "command": "codebuff",
+        "description": "Codebuff terminal coding agent",
+        "install_method": "npm install -g codebuff",
+        "update_method": "npm update -g codebuff",
+        "config_locations": [
+            "~/.config/codebuff",
+        ],
+    },
+    {
+        "name": "Kimi CLI",
+        "command": "kimi",
+        "description": "Moonshot Kimi's terminal coding agent",
+        "install_method": "uv tool install kimi-cli",
+        "update_method": "uv tool upgrade kimi-cli",
+        "config_locations": [
+            "~/.kimi",
+        ],
+    },
+]
+
+
+def default_config() -> dict[str, Any]:
+    """Return a fresh starter config (empty — auto-sync fills it on startup)."""
+    return {"agents": []}
 
 
 def get_config_path() -> Path:
@@ -134,7 +279,7 @@ def get_config_path() -> Path:
             shutil.copy2(bundled_cfg, global_cfg)
         else:
             with open(global_cfg, "w", encoding="utf-8") as f:
-                json.dump(DEFAULT_CONFIG, f, indent=2)
+                json.dump(default_config(), f, indent=2)
         return global_cfg
     except Exception:
         if bundled_cfg.exists():
@@ -151,17 +296,23 @@ def load_config() -> tuple[dict[str, Any], Path]:
                 return json.load(f), cfg_path
         except Exception as e:
             CONSOLE.print(f"[yellow]Warning:[/yellow] Could not read {cfg_path} ({e}). Using defaults.")
-    return DEFAULT_CONFIG.copy(), cfg_path
+    return default_config(), cfg_path
 
 
-def save_config(config: dict[str, Any], target_path: Path | None = None) -> Path:
+def save_config(
+    config: dict[str, Any],
+    target_path: Path | None = None,
+    *,
+    quiet: bool = False,
+) -> Path:
     """Save configuration dictionary to target path."""
     dest = target_path or get_config_path()
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         with open(dest, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
-        CONSOLE.print(f"[{COLOR_READY}]✓ Configuration saved to {dest}[/{COLOR_READY}]")
+        if not quiet:
+            CONSOLE.print(f"[{COLOR_READY}]✓ Configuration saved to {dest}[/{COLOR_READY}]")
     except Exception as e:
         CONSOLE.print(f"[{COLOR_MISSING}]Failed to save config to {dest}: {e}[/{COLOR_MISSING}]")
     return dest
@@ -232,6 +383,226 @@ def detect_agents(config: dict[str, Any]) -> list[dict[str, Any]]:
     return enriched
 
 # ---------------------------------------------------------------------------
+# Auto-Discovery & Config Sync
+# ---------------------------------------------------------------------------
+
+def common_bin_dirs() -> list[Path]:
+    """Return well-known CLI install directories that may be missing from PATH."""
+    home = Path.home()
+    candidates: list[Path] = []
+
+    # npm/pnpm configured prefixes (npm sets these env vars)
+    for var in ("NPM_CONFIG_PREFIX", "npm_config_prefix"):
+        prefix = os.environ.get(var)
+        if prefix:
+            candidates.append(Path(prefix))
+            candidates.append(Path(prefix) / "bin")
+
+    if os.name == "nt":
+        appdata = Path(os.environ.get("APPDATA") or home / "AppData" / "Roaming")
+        local = Path(os.environ.get("LOCALAPPDATA") or home / "AppData" / "Local")
+        candidates += [
+            appdata / "npm",
+            local / "pnpm",
+            local / "Volta" / "bin",
+            home / ".bun" / "bin",
+            home / ".local" / "bin",
+            home / ".cargo" / "bin",
+        ]
+    else:
+        candidates += [
+            home / ".local" / "bin",
+            home / ".npm-global" / "bin",
+            home / ".bun" / "bin",
+            home / ".cargo" / "bin",
+            home / ".volta" / "bin",
+            home / ".local" / "share" / "pnpm",
+            Path("/opt/homebrew/bin"),
+            Path("/usr/local/bin"),
+        ]
+
+    seen: set[str] = set()
+    result: list[Path] = []
+    for candidate in candidates:
+        try:
+            expanded = candidate.expanduser()
+            key = os.path.normcase(os.path.abspath(str(expanded)))
+        except Exception:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        if expanded.is_dir():
+            result.append(expanded)
+    return result
+
+
+def ensure_search_path() -> list[str]:
+    """
+    Append known CLI install dirs to PATH for this process.
+    Makes detection *and* launching work for tools installed outside PATH
+    (npm global, pipx/uv, bun, cargo, Volta, Homebrew).
+    """
+    added: list[str] = []
+    parts = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+    known = {os.path.normcase(os.path.abspath(p)) for p in parts}
+
+    for directory in common_bin_dirs():
+        key = os.path.normcase(os.path.abspath(str(directory)))
+        if key in known:
+            continue
+        known.add(key)
+        parts.append(str(directory))
+        added.append(str(directory))
+
+    if added:
+        os.environ["PATH"] = os.pathsep.join(parts)
+    return added
+
+
+def discover_agents(
+    catalog: list[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """
+    Probe the catalog for installed agents.
+
+    Returns (found, missing). `found` entries carry the resolved command name,
+    which may be an alias when the primary command is not installed.
+    """
+    entries = catalog if catalog is not None else AGENT_CATALOG
+    found: list[dict[str, Any]] = []
+    missing: list[dict[str, Any]] = []
+
+    for entry in entries:
+        item = {
+            key: (list(value) if isinstance(value, list) else value)
+            for key, value in entry.items()
+        }
+        names = [item.get("command", "")] + list(item.get("aliases") or [])
+        resolved = next((name for name in names if name and find_executable(name)), None)
+        if resolved:
+            # Keep the catalog's primary name as an alias so an existing config
+            # entry using it is recognised instead of duplicated.
+            primary = str(item.get("command", ""))
+            aliases = list(item.get("aliases") or [])
+            if primary and primary.lower() != resolved.lower() and primary not in aliases:
+                aliases.append(primary)
+            if aliases:
+                item["aliases"] = aliases
+            item["command"] = resolved
+            found.append(item)
+        else:
+            missing.append(item)
+
+    return found, missing
+
+
+def _unique_agent_name(agents: list[dict[str, Any]], name: str, command: str) -> str:
+    """Avoid duplicate display names when two commands map to the same tool name."""
+    used = {str(a.get("name", "")).strip().lower() for a in agents}
+    if name.strip().lower() not in used:
+        return name
+    candidate = f"{name} ({command})"
+    suffix = 2
+    while candidate.lower() in used:
+        candidate = f"{name} ({command} #{suffix})"
+        suffix += 1
+    return candidate
+
+
+def merge_discovered_agents(
+    config: dict[str, Any],
+    discovered: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[str], list[str]]:
+    """
+    Merge discovered catalog agents into an existing config.
+
+    - Existing entries are never overwritten; only empty metadata is filled in.
+    - New commands are appended and tagged with "source": "catalog".
+    - Alias matches (e.g. `cursor-agent` vs `agent`) reuse the existing entry.
+
+    Returns (config, added_names, enriched_names).
+    """
+    agents: list[dict[str, Any]] = config.setdefault("agents", [])
+    index = {str(a.get("command", "")).strip().lower(): a for a in agents}
+    added: list[str] = []
+    enriched: list[str] = []
+
+    for entry in discovered:
+        command = str(entry.get("command", "")).strip()
+        if not command:
+            continue
+
+        candidates = [command.lower()]
+        candidates += [str(a).strip().lower() for a in entry.get("aliases") or [] if a]
+        existing = next((index[c] for c in candidates if c in index), None)
+
+        if existing is not None:
+            changed = False
+            for key in ("description", "install_method", "update_method"):
+                if not existing.get(key):
+                    existing[key] = entry.get(key, "")
+                    changed = True
+            if not existing.get("config_locations"):
+                existing["config_locations"] = list(entry.get("config_locations") or [])
+                changed = True
+
+            # The stored command may be stale (e.g. renamed binary); prefer the
+            # one that actually resolves on this machine.
+            stored = str(existing.get("command", "")).strip()
+            if stored.lower() != command.lower() and not find_executable(stored):
+                index.pop(stored.lower(), None)
+                existing["command"] = command
+                index[command.lower()] = existing
+                changed = True
+
+            if changed:
+                enriched.append(str(existing.get("name", command)))
+            continue
+
+        new_entry = {
+            "name": _unique_agent_name(agents, str(entry.get("name") or command), command),
+            "command": command,
+            "description": entry.get("description", ""),
+            "install_method": entry.get("install_method", ""),
+            "update_method": entry.get("update_method", ""),
+            "config_locations": list(entry.get("config_locations") or []),
+            "source": "catalog",
+        }
+        agents.append(new_entry)
+        index[command.lower()] = new_entry
+        added.append(new_entry["name"])
+
+    return config, added, enriched
+
+
+def sync_config(
+    config: dict[str, Any],
+    config_path: Path | None = None,
+    *,
+    announce: bool = False,
+) -> tuple[dict[str, Any], list[str]]:
+    """Discover installed agents and persist any changes. Returns (config, added)."""
+    ensure_search_path()
+    found, _missing = discover_agents()
+    config, added, enriched = merge_discovered_agents(config, found)
+
+    if added or enriched:
+        if announce:
+            if added:
+                names = ", ".join(f"[bold white]{n}[/bold white]" for n in added)
+                CONSOLE.print(
+                    f"[{COLOR_READY}]✓ Auto-synced {len(added)} new agent(s):[/{COLOR_READY}] {names}"
+                )
+            if enriched:
+                CONSOLE.print(
+                    f"[{COLOR_MUTED}]Filled in metadata for: {', '.join(enriched)}[/{COLOR_MUTED}]"
+                )
+        save_config(config, config_path, quiet=True)
+
+    return config, added
+
+# ---------------------------------------------------------------------------
 # Header & UI Components
 # ---------------------------------------------------------------------------
 
@@ -251,7 +622,10 @@ def render_header(agents: list[dict[str, Any]]) -> Panel:
     line.append(" ✳ AgentHub ", style=f"bold {COLOR_PRIMARY}")
     line.append(f"v{VERSION}", style=COLOR_MUTED)
     line.append("  ·  ", style=COLOR_MUTED)
-    line.append(f"{installed}/{total} ready", style=f"bold {ready_style}")
+    if total == 0:
+        line.append("no agents detected", style=f"bold {COLOR_MUTED}")
+    else:
+        line.append(f"{installed}/{total} ready", style=f"bold {ready_style}")
 
     return Panel(
         line,
@@ -271,6 +645,13 @@ def show_banner(agents: list[dict[str, Any]] | None = None, config_path: Path | 
 
 def show_status_table(agents: list[dict[str, Any]]) -> None:
     """Print a clean status table."""
+    if not agents:
+        CONSOLE.print(
+            f"[{COLOR_MUTED}]No agents configured yet. Run [bold]agenthub sync[/bold] "
+            f"to scan for installed AI CLIs, or [bold]agenthub add[/bold] to add one manually.[/{COLOR_MUTED}]"
+        )
+        return
+
     table = Table(
         title="[bold white]Agents[/bold white]",
         box=box.SIMPLE_HEAD,
@@ -380,6 +761,12 @@ def build_menu_view(
     agent_count = len(agents)
     lines: list[Text] = [Text("Agents", style=f"bold {COLOR_PRIMARY}")]
 
+    if agent_count == 0:
+        lines.append(Text(
+            "  No agents detected. Press r to scan, a to add manually, d for doctor.",
+            style=COLOR_MUTED,
+        ))
+
     for i, (label, kind, agent_idx, shortcut) in enumerate(items):
         if i == agent_count:
             lines.append(Text(""))
@@ -435,7 +822,7 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
         shortcut = str(i) if i < 10 else ""
         items.append((f"{a['name']}  ({a['command']})", "launch", i - 1, shortcut))
 
-    items.append(("Refresh", "refresh", None, "r"))
+    items.append(("Sync & refresh", "refresh", None, "r"))
     items.append(("Doctor", "doctor", None, "d"))
     items.append(("Update", "update", None, "u"))
     items.append(("Add agent", "add", None, "a"))
@@ -537,6 +924,11 @@ def run_doctor(agents: list[dict[str, Any]], config_path: Path, interactive: boo
     env_table.add_row("Working Directory", os.getcwd())
     env_table.add_row("Active Config Path", str(config_path))
     env_table.add_row("Config File Exists", "Yes" if config_path.exists() else "No (using in-memory defaults)")
+    env_table.add_row("Known Agent Catalog", f"{len(AGENT_CATALOG)} agents")
+    search_dirs = common_bin_dirs()
+    env_table.add_row("Extra Discovery Dirs", str(len(search_dirs)) if search_dirs else "None found")
+    if search_dirs:
+        env_table.add_row("", ", ".join(str(d) for d in search_dirs[:4]) + (" …" if len(search_dirs) > 4 else ""))
 
     CONSOLE.print(Panel(env_table, title="[bold white]Environment Summary[/bold white]", box=box.ROUNDED))
 
@@ -568,6 +960,30 @@ def run_doctor(agents: list[dict[str, Any]], config_path: Path, interactive: boo
         )
 
     CONSOLE.print(agent_table)
+
+    # Catalog agents that are known but not installed (auto-sync candidates)
+    _found, missing = discover_agents()
+    if missing:
+        catalog_table = Table(
+            box=box.SIMPLE_HEAD,
+            header_style=f"bold {COLOR_PRIMARY}",
+            title="[bold white]Catalog — not installed[/bold white]",
+            title_justify="left",
+        )
+        catalog_table.add_column("Agent", style="bold white")
+        catalog_table.add_column("Command", style=COLOR_CYAN)
+        catalog_table.add_column("Install", style=COLOR_MUTED)
+        for entry in missing:
+            catalog_table.add_row(
+                entry.get("name", ""),
+                entry.get("command", ""),
+                entry.get("install_method", ""),
+            )
+        CONSOLE.print(catalog_table)
+        CONSOLE.print(
+            f"[{COLOR_MUTED}]Install any of these and AgentHub will pick them up on the next sync.[/{COLOR_MUTED}]"
+        )
+
     if interactive:
         Prompt.ask("\nPress Enter to return to menu", default="")
 
@@ -631,9 +1047,10 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
         CONSOLE.print("  [bold white]3.[/bold white] Remove an agent")
         CONSOLE.print("  [bold white]4.[/bold white] Open config file in default editor")
         CONSOLE.print("  [bold white]5.[/bold white] Reset configuration to default")
-        CONSOLE.print("  [bold white]6.[/bold white] Back to main menu")
+        CONSOLE.print("  [bold white]6.[/bold white] Show catalog agents not installed")
+        CONSOLE.print("  [bold white]7.[/bold white] Back to main menu")
 
-        choice = Prompt.ask("\n  Select option", choices=["1", "2", "3", "4", "5", "6"], default="6")
+        choice = Prompt.ask("\n  Select option", choices=["1", "2", "3", "4", "5", "6", "7"], default="7")
 
         if choice == "1":
             show_agent_details(detect_agents(config))
@@ -645,10 +1062,12 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
             open_config_file(config_path)
         elif choice == "5":
             if Confirm.ask("  Are you sure you want to reset config to default?", default=False):
-                config = DEFAULT_CONFIG.copy()
+                config = default_config()
                 save_config(config, config_path)
                 Prompt.ask("\n  Config reset. Press Enter", default="")
         elif choice == "6":
+            show_catalog_agents()
+        elif choice == "7":
             break
 
     return config
@@ -687,6 +1106,38 @@ def show_agent_details(agents: list[dict[str, Any]]) -> None:
     Prompt.ask("\nPress Enter to return", default="")
 
 
+def show_catalog_agents() -> None:
+    """List catalog agents that are not currently installed, with install commands."""
+    CONSOLE.clear()
+    CONSOLE.print(f"[bold {COLOR_PRIMARY}]Agent Catalog — Available to Install[/bold {COLOR_PRIMARY}]\n")
+
+    found, missing = discover_agents()
+    CONSOLE.print(f"[{COLOR_MUTED}]{len(found)} of {len(found) + len(missing)} catalog agents detected on this machine.[/{COLOR_MUTED}]\n")
+
+    if not missing:
+        CONSOLE.print(f"[{COLOR_READY}]✓ Every catalog agent is already installed.[/{COLOR_READY}]")
+    else:
+        table = Table(box=box.SIMPLE_HEAD, header_style=f"bold {COLOR_PRIMARY}")
+        table.add_column("Agent", style="bold white")
+        table.add_column("Command", style=COLOR_CYAN)
+        table.add_column("Description", style=COLOR_MUTED)
+        table.add_column("Install", style=COLOR_ACCENT)
+        for entry in missing:
+            table.add_row(
+                entry.get("name", ""),
+                entry.get("command", ""),
+                entry.get("description", ""),
+                entry.get("install_method", ""),
+            )
+        CONSOLE.print(table)
+        CONSOLE.print(
+            f"\n[{COLOR_MUTED}]Install one, then run [bold]agenthub sync[/bold] (or press r in the menu) "
+            f"to pick it up automatically.[/{COLOR_MUTED}]"
+        )
+
+    Prompt.ask("\nPress Enter to return", default="")
+
+
 def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     """Interactive wizard to register a new agent."""
     CONSOLE.print(f"\n[bold {COLOR_PRIMARY}]Register New AI CLI Agent[/bold {COLOR_PRIMARY}]\n")
@@ -704,6 +1155,7 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
         "install_method": install_method,
         "update_method": update_method,
         "config_locations": [cfg_loc] if cfg_loc else [],
+        "source": "user",
     }
 
     config.setdefault("agents", []).append(new_agent)
@@ -768,10 +1220,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  agenthub                 # Open interactive AgentHub dashboard
+  agenthub                 # Open interactive AgentHub dashboard (auto-syncs)
   agenthub list            # Print status summary table of all agents
-  agenthub launch agy      # Directly launch Gemini CLI (agy)
-  agenthub launch codex    # Directly launch Codex CLI
+  agenthub sync            # Scan for installed AI CLIs and register new ones
+  agenthub launch agy      # Directly launch Antigravity CLI (agy)
+  agenthub launch claude   # Directly launch Claude Code
   agenthub doctor          # Run environment and PATH diagnostics
   agenthub update          # Check and update installed agents
   agenthub add             # Add a new CLI agent interactively
@@ -779,11 +1232,19 @@ Examples:
 """
     )
     parser.add_argument("-v", "--version", action="version", version=f"AgentHub v{VERSION}")
+    parser.add_argument(
+        "--no-sync",
+        action="store_true",
+        help="Skip auto-discovery of installed agents for this run",
+    )
 
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 
     # list
     subparsers.add_parser("list", aliases=["ls"], help="List all configured agents and their status")
+
+    # sync
+    subparsers.add_parser("sync", aliases=["discover"], help="Scan for installed AI CLIs and add new ones")
 
     # launch
     p_launch = subparsers.add_parser("launch", aliases=["run"], help="Launch a specific agent directly")
@@ -812,7 +1273,13 @@ def main() -> None:
     parser = build_parser()
     args, unknown = parser.parse_known_args()
 
+    ensure_search_path()
     config, config_path = load_config()
+
+    # Auto-sync: discover installed agents and persist them before anything else.
+    if not args.no_sync and args.subcommand not in ("config", "sync", "discover"):
+        config, _added = sync_config(config, config_path, announce=False)
+
     agents = detect_agents(config)
 
     # Subcommand dispatch
@@ -820,6 +1287,23 @@ def main() -> None:
         CONSOLE.print(render_header(agents))
         CONSOLE.print()
         show_status_table(agents)
+        return
+
+    if args.subcommand in ("sync", "discover"):
+        config, added = sync_config(config, config_path, announce=True)
+        agents = detect_agents(config)
+        CONSOLE.print()
+        CONSOLE.print(render_header(agents))
+        CONSOLE.print()
+        show_status_table(agents)
+        found, missing = discover_agents()
+        if not added:
+            CONSOLE.print(f"\n[{COLOR_MUTED}]No new agents found.[/{COLOR_MUTED}]")
+        CONSOLE.print(
+            f"[{COLOR_MUTED}]{len(found)} of {len(found) + len(missing)} known catalog agents detected. "
+            f"Run [bold]agenthub doctor[/bold] to see install suggestions.[/{COLOR_MUTED}]"
+        )
+        CONSOLE.print(f"[{COLOR_MUTED}]Config: {config_path}[/{COLOR_MUTED}]")
         return
 
     if args.subcommand in ("launch", "run"):
@@ -895,8 +1379,13 @@ def main() -> None:
             config, config_path = load_config()
             agents = detect_agents(config)
         elif action == "refresh":
+            CONSOLE.clear()
             config, config_path = load_config()
+            config, added = sync_config(config, config_path, announce=True)
             agents = detect_agents(config)
+            if not added:
+                CONSOLE.print(f"[{COLOR_MUTED}]✓ Up to date — no new agents discovered.[/{COLOR_MUTED}]")
+            Prompt.ask("\nPress Enter to continue", default="")
         elif action == "doctor":
             run_doctor(agents, config_path, interactive=True)
         elif action == "update":
