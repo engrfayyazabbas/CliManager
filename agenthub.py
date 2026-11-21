@@ -166,10 +166,9 @@ def show_menu(agents: list[dict]) -> None:
     n = len(agents)
     menu_items.append(f"  [bold]{n+1}.[/bold] Refresh agent status")
     menu_items.append(f"  [bold]{n+2}.[/bold] Check agent versions")
-    menu_items.append(f"  [bold]{n+3}.[/bold] Show usage & limits")
-    menu_items.append(f"  [bold]{n+4}.[/bold] Update agents")
-    menu_items.append(f"  [bold]{n+5}.[/bold] Settings")
-    menu_items.append(f"  [bold]{n+6}.[/bold] Exit")
+    menu_items.append(f"  [bold]{n+3}.[/bold] Update agents")
+    menu_items.append(f"  [bold]{n+4}.[/bold] Settings")
+    menu_items.append(f"  [bold]{n+5}.[/bold] Exit")
 
     console.print(Panel(
         "\n".join(menu_items),
@@ -213,29 +212,6 @@ def check_versions(agents: list[dict]) -> None:
         else:
             table.add_row(a["name"], "[dim]not installed[/dim]")
     console.print(table)
-
-
-def show_usage(agents: list[dict]) -> None:
-    """Show usage information and supported provider sources per agent."""
-    table = Table(title="Usage & Limits", box=box.ROUNDED, header_style="bold bright_cyan", show_lines=True)
-    table.add_column("Agent", min_width=14)
-    table.add_column("Usage information")
-    table.add_column("Quota, reset, plan")
-    table.add_column("Supported source")
-    for agent in agents:
-        name, command = agent["name"].lower(), agent["command"].lower()
-        if not agent["installed"]:
-            table.add_row(agent["name"], "Not installed", "Unavailable", "—")
-        elif "gemini" in name or command == "gemini":
-            table.add_row(agent["name"], "Interactive session token usage", "Model quota may appear in CLI; account reset and plan unavailable here", "Run `gemini`, then `/stats model`")
-        elif "opencode" in name or command == "opencode":
-            table.add_row(agent["name"], "Historical token and cost statistics", "Account quota, rate limits, reset, and plan unavailable", "`opencode stats`")
-        elif "cursor" in name or command == "agent":
-            table.add_row(agent["name"], "No usage counter exposed by status command", "Quota and reset unavailable from CLI", "`agent status` reports account/auth status")
-        else:
-            table.add_row(agent["name"], "Unavailable from supported local command", "Limit, reset, and plan unavailable", "No source configured")
-    console.print(table)
-    console.print("[dim]Unavailable means the provider CLI does not expose this account data to AgentHub. No quota is estimated.[/dim]")
 
 
 def update_agents(agents: list[dict]) -> None:
@@ -404,8 +380,8 @@ def main() -> None:
     while True:
         show_menu(agents)
         n = len(agents)
-        valid = [str(i) for i in range(1, n + 7)]
-        choice = Prompt.ask("\n  Select", choices=valid, default=str(n + 6))
+        valid = [str(i) for i in range(1, n + 6)]
+        choice = Prompt.ask("\n  Select", choices=valid, default=str(n + 5))
         idx = int(choice)
 
         if idx <= n:
@@ -424,18 +400,15 @@ def main() -> None:
             check_versions(agents)
 
         elif idx == n + 3:
-            show_usage(agents)
-
-        elif idx == n + 4:
             # Update agents
             update_agents(agents)
 
-        elif idx == n + 5:
+        elif idx == n + 4:
             # Settings
             config = settings_menu(config)
             agents = detect_agents(config)
 
-        elif idx == n + 6:
+        elif idx == n + 5:
             # Exit
             console.print("\n[dim]Goodbye.[/dim]\n")
             break
