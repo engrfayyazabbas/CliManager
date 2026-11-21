@@ -43,19 +43,11 @@ python "D:\Web Development\CliManager\agenthub.py"
 python agenthub.py
 ```
 
-### Menu
+### Navigation
 
-```
-1. Launch Antigravity CLI (Gemini)
-2. Launch Codex CLI
-3. Launch OpenCode CLI
-4. Launch Cursor CLI
-5. Refresh agent status
-6. Check agent versions
-7. Update agents
-8. Settings
-9. Exit
-```
+Use **↑ / ↓** (or **j / k**) to move through the workspace. Press **Enter** to launch the selected agent or open an action. Press **q** or **Esc** to exit. The interface shows which agents are installed before launch.
+
+The workspace includes launching agents, refreshing detection, checking versions, updating with confirmation, and settings for agent details and configuration.
 
 ### Settings Sub-menu
 

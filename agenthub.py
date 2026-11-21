@@ -128,9 +128,9 @@ def detect_agents(config: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def show_banner() -> None:
-    banner = Text("⚡ AgentHub", style="bold bright_cyan")
-    banner.append(" — Local CLI Agent Manager", style="dim")
-    console.print(Panel(banner, box=box.DOUBLE, expand=False, padding=(0, 2)))
+    banner = Text("✳ AgentHub", style="bold bright_cyan")
+    banner.append("  your AI CLI workspace", style="dim")
+    console.print(Panel(banner, box=box.ROUNDED, expand=False, padding=(0, 2)))
 
 
 def show_status_table(agents: list[dict]) -> None:
@@ -155,28 +155,52 @@ def show_status_table(agents: list[dict]) -> None:
     console.print(table)
 
 
-def show_menu(agents: list[dict]) -> None:
-    """Print the interactive menu."""
-    console.print()
-    menu_items = []
-    for i, a in enumerate(agents, 1):
-        tag = "[green]●[/green]" if a["installed"] else "[red]✗[/red]"
-        menu_items.append(f"  {tag} [bold]{i}.[/bold] Launch {a['name']}")
+def read_navigation_key() -> str:
+    """Read a single navigation key on Windows and POSIX terminals."""
+    if os.name == "nt":
+        import msvcrt
+        key = msvcrt.getwch()
+        if key in ("\x00", "\xe0"):
+            return {"H": "up", "P": "down"}.get(msvcrt.getwch(), "")
+        return {"\r": "enter", "\x1b": "escape"}.get(key, key.lower())
+    import termios
+    import tty
+    fd = sys.stdin.fileno()
+    previous = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        key = sys.stdin.read(1)
+        if key == "\x1b":
+            sequence = sys.stdin.read(2)
+            return {"[A": "up", "[B": "down"}.get(sequence, "escape")
+        return {"\r": "enter", "\n": "enter"}.get(key, key.lower())
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, previous)
 
-    n = len(agents)
-    menu_items.append(f"  [bold]{n+1}.[/bold] Refresh agent status")
-    menu_items.append(f"  [bold]{n+2}.[/bold] Check agent versions")
-    menu_items.append(f"  [bold]{n+3}.[/bold] Update agents")
-    menu_items.append(f"  [bold]{n+4}.[/bold] Settings")
-    menu_items.append(f"  [bold]{n+5}.[/bold] Exit")
 
-    console.print(Panel(
-        "\n".join(menu_items),
-        title="[bold]Menu[/bold]",
-        box=box.ROUNDED,
-        expand=False,
-        padding=(1, 3),
-    ))
+def choose_action(agents: list[dict]) -> str:
+    """Navigate the workspace with arrow keys or j/k and Enter."""
+    actions = [(f"Launch {a['name']}", "launch", i) for i, a in enumerate(agents)]
+    actions.extend([("Refresh agent status", "refresh", None), ("Check agent versions", "versions", None),
+                    ("Update agents", "update", None), ("Settings", "settings", None), ("Exit", "exit", None)])
+    selected = 0
+    while True:
+        console.clear()
+        show_banner()
+        show_status_table(agents)
+        rows = []
+        for i, (label, kind, agent_i) in enumerate(actions):
+            marker = "❯" if i == selected else " "
+            state = ("[green]● ready[/green]" if agents[agent_i]["installed"] else "[red]○ missing[/red]") if kind == "launch" else "[dim]action[/dim]"
+            rows.append(f"[bright_cyan]{marker}[/bright_cyan] {label:<32} {state}")
+        console.print(Panel("\n".join(rows), title="[bold]Workspace[/bold]", subtitle="↑/↓ or j/k · Enter · q", box=box.ROUNDED, padding=(1, 2)))
+        key = read_navigation_key()
+        if key in ("up", "k"): selected = (selected - 1) % len(actions)
+        elif key in ("down", "j"): selected = (selected + 1) % len(actions)
+        elif key == "enter":
+            _, kind, agent_index = actions[selected]
+            return f"{kind}:{agent_index}" if agent_index is not None else kind
+        elif key in ("q", "escape"): return "exit"
 
 # ---------------------------------------------------------------------------
 # Actions
@@ -370,46 +394,23 @@ def open_config_in_editor() -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    console.clear()
-    show_banner()
-
     config = load_config()
     agents = detect_agents(config)
-    show_status_table(agents)
-
     while True:
-        show_menu(agents)
-        n = len(agents)
-        valid = [str(i) for i in range(1, n + 6)]
-        choice = Prompt.ask("\n  Select", choices=valid, default=str(n + 5))
-        idx = int(choice)
-
-        if idx <= n:
-            # Launch agent
-            launch_agent(agents[idx - 1])
-
-        elif idx == n + 1:
-            # Refresh
-            console.print("\n[yellow]Refreshing...[/yellow]")
+        action = choose_action(agents)
+        if action.startswith("launch:"):
+            launch_agent(agents[int(action.split(":", 1)[1])])
+        elif action == "refresh":
             config = load_config()
             agents = detect_agents(config)
-            show_status_table(agents)
-
-        elif idx == n + 2:
-            # Check versions
+        elif action == "versions":
             check_versions(agents)
-
-        elif idx == n + 3:
-            # Update agents
+        elif action == "update":
             update_agents(agents)
-
-        elif idx == n + 4:
-            # Settings
+        elif action == "settings":
             config = settings_menu(config)
             agents = detect_agents(config)
-
-        elif idx == n + 5:
-            # Exit
+        elif action == "exit":
             console.print("\n[dim]Goodbye.[/dim]\n")
             break
 
