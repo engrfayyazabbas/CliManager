@@ -3,9 +3,9 @@
     {
       "name": "Gemini CLI",
       "command": "agy",
-      "description": "Google's AI coding assistant CLI",
-      "install_method": "npm install -g @anthropic-ai/gemini-cli",
-      "update_method": "npm update -g @google/gemini-cli",
+      "description": "Google's AI coding assistant CLI (Antigravity)",
+      "install_method": "See documentation for Antigravity / Gemini CLI",
+      "update_method": "agy update",
       "config_locations": [
         "%USERPROFILE%\\.gemini",
         "%USERPROFILE%\\.gemini\\settings.json"
