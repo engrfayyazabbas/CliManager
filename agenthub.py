@@ -69,6 +69,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Anthropic's agentic coding assistant for the terminal",
         "install_method": "npm install -g @anthropic-ai/claude-code",
         "update_method": "npm update -g @anthropic-ai/claude-code",
+        "uninstall_method": "npm uninstall -g @anthropic-ai/claude-code",
         "config_locations": [
             "~/.claude",
             "~/.claude/settings.json",
@@ -81,6 +82,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "OpenAI's Codex CLI agent for software engineering",
         "install_method": "npm install -g @openai/codex",
         "update_method": "npm update -g @openai/codex",
+        "uninstall_method": "npm uninstall -g @openai/codex",
         "config_locations": [
             "~/.codex",
             "~/.codex/config.json",
@@ -92,6 +94,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Google's open-source terminal AI agent",
         "install_method": "npm install -g @google/gemini-cli",
         "update_method": "npm update -g @google/gemini-cli",
+        "uninstall_method": "npm uninstall -g @google/gemini-cli",
         "config_locations": [
             "~/.gemini",
             "~/.gemini/settings.json",
@@ -103,6 +106,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Google Antigravity's terminal coding agent",
         "install_method": "Install Antigravity from https://antigravity.google",
         "update_method": "agy update",
+        "uninstall_method": "",
         "config_locations": [
             "~/.gemini",
             "~/.gemini/settings.json",
@@ -114,6 +118,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Open-source AI coding CLI tool",
         "install_method": "npm install -g opencode-ai",
         "update_method": "npm update -g opencode-ai",
+        "uninstall_method": "npm uninstall -g opencode-ai",
         "config_locations": [
             "~/.opencode",
             "~/.config/opencode",
@@ -126,6 +131,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Cursor AI editor CLI interface",
         "install_method": "Install from https://cursor.com (add to PATH via Cursor settings)",
         "update_method": "Update via Cursor application or reinstall from https://cursor.com",
+        "uninstall_method": "",
         "config_locations": [
             "~/.cursor",
         ],
@@ -136,6 +142,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "AI pair programming in your terminal",
         "install_method": "pip install aider-chat  (or: uv tool install aider-chat)",
         "update_method": "pip install --upgrade aider-chat  (or: uv tool upgrade aider-chat)",
+        "uninstall_method": "pip uninstall -y aider-chat  (or: uv tool uninstall aider-chat)",
         "config_locations": [
             "~/.aider.conf.yml",
             "~/.aider",
@@ -147,6 +154,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Block's open-source, local-first AI agent",
         "install_method": "See https://block.github.io/goose/docs/getting-started/installation",
         "update_method": "goose update",
+        "uninstall_method": "",
         "config_locations": [
             "~/.config/goose",
         ],
@@ -157,6 +165,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Alibaba's Qwen coding agent CLI",
         "install_method": "npm install -g @qwen-code/qwen-code",
         "update_method": "npm update -g @qwen-code/qwen-code",
+        "uninstall_method": "npm uninstall -g @qwen-code/qwen-code",
         "config_locations": [
             "~/.qwen",
         ],
@@ -167,6 +176,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Charm's glamorous terminal AI coding agent",
         "install_method": "npm install -g @charmland/crush",
         "update_method": "npm update -g @charmland/crush",
+        "uninstall_method": "npm uninstall -g @charmland/crush",
         "config_locations": [
             "~/.config/crush",
         ],
@@ -177,6 +187,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Sourcegraph Amp coding agent",
         "install_method": "npm install -g @sourcegraph/amp",
         "update_method": "npm update -g @sourcegraph/amp",
+        "uninstall_method": "npm uninstall -g @sourcegraph/amp",
         "config_locations": [
             "~/.config/amp",
         ],
@@ -187,6 +198,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Factory's software engineering agent CLI",
         "install_method": "See https://docs.factory.ai",
         "update_method": "droid update",
+        "uninstall_method": "",
         "config_locations": [
             "~/.factory",
         ],
@@ -197,6 +209,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Open-source autonomous software engineering agent",
         "install_method": "uv tool install openhands  (or: pip install openhands-ai)",
         "update_method": "uv tool upgrade openhands",
+        "uninstall_method": "uv tool uninstall openhands  (or: pip uninstall -y openhands-ai)",
         "config_locations": [
             "~/.openhands",
         ],
@@ -207,6 +220,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "GitHub Copilot's terminal agent",
         "install_method": "npm install -g @github/copilot",
         "update_method": "npm update -g @github/copilot",
+        "uninstall_method": "npm uninstall -g @github/copilot",
         "config_locations": [
             "~/.config/github-copilot",
         ],
@@ -217,6 +231,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Continue's terminal coding agent",
         "install_method": "npm install -g @continuedev/cli",
         "update_method": "npm update -g @continuedev/cli",
+        "uninstall_method": "npm uninstall -g @continuedev/cli",
         "config_locations": [
             "~/.continue",
         ],
@@ -227,6 +242,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Codebuff terminal coding agent",
         "install_method": "npm install -g codebuff",
         "update_method": "npm update -g codebuff",
+        "uninstall_method": "npm uninstall -g codebuff",
         "config_locations": [
             "~/.config/codebuff",
         ],
@@ -237,6 +253,7 @@ AGENT_CATALOG: list[dict[str, Any]] = [
         "description": "Moonshot Kimi's terminal coding agent",
         "install_method": "uv tool install kimi-cli",
         "update_method": "uv tool upgrade kimi-cli",
+        "uninstall_method": "uv tool uninstall kimi-cli",
         "config_locations": [
             "~/.kimi",
         ],
@@ -271,53 +288,158 @@ def set_agent_hidden(config: dict[str, Any], command: str, hidden: bool) -> None
     config["ignored"] = sorted(commands)
 
 
-def resolve_agent_for_removal(
-    config: dict[str, Any],
+_NON_COMMAND_PREFIXES = ("see ", "install ", "visit ", "download ", "update ")
+
+_INSTALL_TO_UNINSTALL_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"^npm\s+(?:install|i)\s+(?:-g|--global)\s+(.+)$", re.IGNORECASE), r"npm uninstall -g \1"),
+    (re.compile(r"^pnpm\s+(?:add|install|i)\s+(?:-g|--global)\s+(.+)$", re.IGNORECASE), r"pnpm remove -g \1"),
+    (re.compile(r"^bun\s+(?:add|install|i)\s+(?:-g|--global)\s+(.+)$", re.IGNORECASE), r"bun remove -g \1"),
+    (re.compile(r"^uv\s+tool\s+install\s+(.+)$", re.IGNORECASE), r"uv tool uninstall \1"),
+    (re.compile(r"^pipx\s+install\s+(.+)$", re.IGNORECASE), r"pipx uninstall \1"),
+    (re.compile(r"^(pip3?)\s+install\s+(.+)$", re.IGNORECASE), r"\1 uninstall -y \2"),
+    (re.compile(r"^cargo\s+install\s+(.+)$", re.IGNORECASE), r"cargo uninstall \1"),
+    (re.compile(r"^brew\s+install\s+(.+)$", re.IGNORECASE), r"brew uninstall \1"),
+]
+
+
+def _split_command_alternatives(raw: str) -> list[str]:
+    """Split strings like 'pip install X  (or: uv tool install X)' into commands."""
+    text = str(raw or "").strip()
+    if not text:
+        return []
+    match = re.match(r"^(.*?)\s*\(or:\s*(.+)\)\s*$", text, flags=re.IGNORECASE)
+    if match:
+        parts = [match.group(1).strip()]
+        parts.extend(
+            p.strip()
+            for p in re.split(r"\s+or\s+", match.group(2), flags=re.IGNORECASE)
+            if p.strip()
+        )
+        return [p for p in parts if p]
+    return [text]
+
+
+def _is_runnable_command(cmd: str) -> bool:
+    """Return True if *cmd* looks like a shell command rather than prose instructions."""
+    stripped = str(cmd or "").strip()
+    if not stripped:
+        return False
+    lower = stripped.lower()
+    return not any(lower.startswith(prefix) for prefix in _NON_COMMAND_PREFIXES)
+
+
+def _derive_uninstall_from_install(install_cmd: str) -> str | None:
+    """Infer an uninstall command from a package-manager install command."""
+    cleaned = str(install_cmd or "").strip()
+    if not cleaned:
+        return None
+    for pattern, replacement in _INSTALL_TO_UNINSTALL_PATTERNS:
+        if pattern.match(cleaned):
+            derived = pattern.sub(replacement, cleaned)
+            # Strip install-only flags such as --upgrade / -U when deriving uninstall
+            tokens = [
+                tok for tok in derived.split()
+                if tok not in ("-U", "--upgrade", "--force-reinstall", "--force")
+            ]
+            return " ".join(tokens)
+    return None
+
+
+def _pick_available_command(candidates: list[str], *, preferred_hint: str = "") -> str | None:
+    """Choose the best runnable command from *candidates* based on environment hints."""
+    runnable = [c for c in candidates if _is_runnable_command(c)]
+    if not runnable:
+        return None
+
+    hint = preferred_hint.lower()
+    if any(marker in hint for marker in ("/uv/", "\\uv\\", "uv\\tools", "uv/tools")):
+        for cmd in runnable:
+            if cmd.lower().startswith("uv "):
+                return cmd
+    if "pipx" in hint:
+        for cmd in runnable:
+            if cmd.lower().startswith("pipx "):
+                return cmd
+
+    for cmd in runnable:
+        head = cmd.split()[0]
+        if find_executable(head):
+            return cmd
+        if head.lower() == "pip" and find_executable("pip3"):
+            return cmd
+    return runnable[0]
+
+
+def resolve_install_command(entry: dict[str, Any]) -> str | None:
+    """Return a runnable install command for *entry*, or None if manual install is needed."""
+    candidates = _split_command_alternatives(str(entry.get("install_method", "")))
+    return _pick_available_command(candidates)
+
+
+def resolve_uninstall_command(entry: dict[str, Any]) -> str | None:
+    """Return a runnable uninstall command for *entry*, or None if manual uninstall is needed."""
+    explicit = _split_command_alternatives(str(entry.get("uninstall_method", "")))
+    if explicit:
+        candidates = explicit
+    else:
+        candidates = []
+        for alt in _split_command_alternatives(str(entry.get("install_method", ""))):
+            if _is_runnable_command(alt):
+                derived = _derive_uninstall_from_install(alt)
+                if derived:
+                    candidates.append(derived)
+
+    cmd = str(entry.get("command", "")).strip()
+    exe_hint = str(entry.get("exe_path") or (find_executable(cmd) if cmd else "") or "")
+    return _pick_available_command(candidates, preferred_hint=exe_hint)
+
+
+def _resolve_entry_in_list(
+    entries: list[dict[str, Any]],
     target: str,
     *,
-    visible_agents: list[dict[str, Any]] | None = None,
+    index_entries: list[dict[str, Any]] | None = None,
+    not_found_message: str | None = None,
 ) -> tuple[int | None, dict[str, Any] | None, str | None]:
     """
-    Resolve *target* (1-based visible index, exact command/name, or unique partial match)
-    to ``(config_index, entry, error_message)``.
+    Resolve *target* (1-based index into *index_entries*, exact command/alias/name,
+    or unique partial match) to ``(entries_index, entry, error_message)``.
     """
     raw = target.strip()
     if not raw:
         return None, None, "No agent specified."
 
-    configured = config.get("agents", [])
     needle = raw.lower()
 
-    # 1. Numeric 1-based index into the visible agent list (matches `agenthub list`)
-    if raw.isdigit() and visible_agents is not None:
+    if raw.isdigit() and index_entries is not None:
         vis_idx = int(raw) - 1
-        if 0 <= vis_idx < len(visible_agents):
-            chosen = visible_agents[vis_idx]
+        if 0 <= vis_idx < len(index_entries):
+            chosen = index_entries[vis_idx]
             chosen_cmd = str(chosen.get("command", "")).strip().lower()
             chosen_name = str(chosen.get("name", "")).strip().lower()
-            for idx, entry in enumerate(configured):
+            for idx, entry in enumerate(entries):
                 if (
                     str(entry.get("command", "")).strip().lower() == chosen_cmd
                     and str(entry.get("name", "")).strip().lower() == chosen_name
                 ):
                     return idx, entry, None
-            for idx, entry in enumerate(configured):
+            for idx, entry in enumerate(entries):
                 if str(entry.get("command", "")).strip().lower() == chosen_cmd:
                     return idx, entry, None
 
-    # 2. Exact match on command or display name
-    for idx, entry in enumerate(configured):
+    for idx, entry in enumerate(entries):
         cmd = str(entry.get("command", "")).strip().lower()
         name = str(entry.get("name", "")).strip().lower()
-        if cmd == needle or name == needle:
+        aliases = [str(a).strip().lower() for a in entry.get("aliases") or [] if a]
+        if needle == cmd or needle == name or needle in aliases:
             return idx, entry, None
 
-    # 3. Unique partial match on command or display name
     partial_matches = [
         (idx, entry)
-        for idx, entry in enumerate(configured)
+        for idx, entry in enumerate(entries)
         if needle in str(entry.get("command", "")).strip().lower()
         or needle in str(entry.get("name", "")).strip().lower()
+        or any(needle in str(a).strip().lower() for a in entry.get("aliases") or [] if a)
     ]
     if len(partial_matches) == 1:
         idx, entry = partial_matches[0]
@@ -329,7 +451,22 @@ def resolve_agent_for_removal(
         )
         return None, None, f"Multiple agents match '{target}': {names}. Be more specific."
 
-    return None, None, f"Agent '{target}' not found in configuration."
+    return None, None, not_found_message or f"Agent '{target}' not found."
+
+
+def resolve_agent_for_removal(
+    config: dict[str, Any],
+    target: str,
+    *,
+    visible_agents: list[dict[str, Any]] | None = None,
+) -> tuple[int | None, dict[str, Any] | None, str | None]:
+    """Resolve *target* against configured agents for removal."""
+    return _resolve_entry_in_list(
+        config.get("agents", []),
+        target,
+        index_entries=visible_agents,
+        not_found_message=f"Agent '{target}' not found in configuration.",
+    )
 
 
 def remove_agent_from_config(
@@ -681,8 +818,8 @@ def merge_discovered_agents(
 
         if existing is not None:
             changed = False
-            for key in ("description", "install_method", "update_method"):
-                if not existing.get(key):
+            for key in ("description", "install_method", "update_method", "uninstall_method"):
+                if not existing.get(key) and entry.get(key):
                     existing[key] = entry.get(key, "")
                     changed = True
             if not existing.get("config_locations"):
@@ -708,6 +845,7 @@ def merge_discovered_agents(
             "description": entry.get("description", ""),
             "install_method": entry.get("install_method", ""),
             "update_method": entry.get("update_method", ""),
+            "uninstall_method": entry.get("uninstall_method", ""),
             "config_locations": list(entry.get("config_locations") or []),
             "source": "catalog",
         }
@@ -965,6 +1103,7 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
         items.append((f"{a['name']}  ({a['command']})", "launch", i - 1, shortcut))
 
     items.append(("Sync & refresh", "refresh", None, "r"))
+    items.append(("Install agent", "install", None, "i"))
     items.append(("Doctor", "doctor", None, "d"))
     items.append(("Update all agents", "update", None, "u"))
     items.append(("Settings", "settings", None, "s"))
@@ -1419,6 +1558,420 @@ def update_agents_wizard(agents: list[dict[str, Any]], *, prompt_return: bool = 
     if prompt_return:
         pause()
 
+def _agent_keys(entry: dict[str, Any]) -> set[str]:
+    """All lowercase command and alias identifiers for an agent entry."""
+    keys: set[str] = set()
+    cmd = str(entry.get("command", "")).strip().lower()
+    if cmd:
+        keys.add(cmd)
+    for alias in entry.get("aliases") or []:
+        text = str(alias).strip().lower()
+        if text:
+            keys.add(text)
+    return keys
+
+
+def _find_installed_command(entry: dict[str, Any]) -> tuple[str, str | None]:
+    """Return (resolved_command, exe_path) checking primary command and aliases."""
+    cmd = str(entry.get("command", "")).strip()
+    if cmd:
+        exe = find_executable(cmd)
+        if exe:
+            return cmd, exe
+    for alias in entry.get("aliases") or []:
+        alias_str = str(alias).strip()
+        if alias_str:
+            exe = find_executable(alias_str)
+            if exe:
+                return alias_str, exe
+    return cmd, None
+
+
+def installable_agents(
+    config: dict[str, Any],
+    *,
+    catalog: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Return catalog and configured agents that are not currently installed."""
+    found, missing = discover_agents(catalog)
+    seen: set[str] = set()
+    for entry in found:
+        seen.update(_agent_keys(entry))
+
+    candidates: list[dict[str, Any]] = []
+    for entry in missing:
+        candidates.append(entry)
+        seen.update(_agent_keys(entry))
+
+    for entry in config.get("agents", []):
+        cmd = str(entry.get("command", "")).strip()
+        if not cmd or cmd.lower() in seen:
+            continue
+        if not find_executable(cmd):
+            candidates.append(entry)
+            seen.add(cmd.lower())
+
+    return candidates
+
+
+def uninstallable_agents(
+    config: dict[str, Any],
+    *,
+    catalog: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Return installed agents (configured or catalog-discovered) eligible for uninstall."""
+    found, _missing = discover_agents(catalog)
+    catalog_by_key: dict[str, dict[str, Any]] = {}
+    for entry in found:
+        for key in _agent_keys(entry):
+            catalog_by_key[key] = entry
+
+    result: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for entry in config.get("agents", []):
+        cmd, exe = _find_installed_command(entry)
+        if not cmd or not exe:
+            continue
+        cat_match = catalog_by_key.get(cmd.lower(), {})
+        merged = {
+            **entry,
+            "exe_path": exe,
+            "uninstall_method": entry.get("uninstall_method") or cat_match.get("uninstall_method", ""),
+        }
+        result.append(merged)
+        seen.update(_agent_keys(merged))
+
+    for entry in found:
+        cmd, exe = _find_installed_command(entry)
+        if not cmd or not exe or cmd.lower() in seen:
+            continue
+        result.append({**entry, "exe_path": exe})
+        seen.update(_agent_keys(entry))
+
+    return result
+
+
+def _confirm_cli_or_panel(
+    title: str,
+    panel_message: str,
+    cli_prompt: str,
+    *,
+    interactive: bool,
+    danger: bool = False,
+) -> bool:
+    """Confirm either via full-screen TUI panel or inline CLI prompt."""
+    if interactive:
+        return confirm_panel(title, panel_message, danger=danger)
+    answer = Prompt.ask(cli_prompt, choices=["y", "n"], default="n")
+    return answer.lower() == "y"
+
+
+def run_install_agent(
+    entry: dict[str, Any],
+    config: dict[str, Any],
+    config_path: Path,
+    *,
+    skip_confirm: bool = False,
+    interactive: bool = True,
+) -> tuple[bool, str]:
+    """Install *entry* and sync it into *config*. Returns ``(success, status_note)``."""
+    cmd, existing_exe = _find_installed_command(entry)
+    name = str(entry.get("name", cmd) or cmd)
+
+    if existing_exe:
+        msg = f"{name} ({cmd}) is already installed at {existing_exe}."
+        if interactive:
+            CONSOLE.clear()
+            CONSOLE.print(Panel(
+                f"[bold {COLOR_READY}]{msg}[/bold {COLOR_READY}]\n\n"
+                f"[{COLOR_MUTED}]Use Update to upgrade installed agents.[/{COLOR_MUTED}]",
+                title=f"[bold {COLOR_PRIMARY}]Install agent[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+        else:
+            CONSOLE.print(f"[{COLOR_READY}]{msg}[/{COLOR_READY}]")
+            CONSOLE.print(f"[{COLOR_MUTED}]Run [bold]agenthub update {cmd}[/bold] to update it.[/{COLOR_MUTED}]")
+        if interactive:
+            pause()
+        return False, f"{name} is already installed."
+
+    install_cmd = resolve_install_command(entry)
+    if install_cmd is None:
+        instructions = str(entry.get("install_method") or "See tool documentation.")
+        if interactive:
+            CONSOLE.clear()
+            CONSOLE.print(Panel(
+                f"[bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) requires manual installation.\n\n"
+                f"[bold white]Instructions:[/bold white]\n"
+                f"  [bold yellow]{instructions}[/bold yellow]",
+                title=f"[bold {COLOR_ACCENT}]Manual Install Required[/bold {COLOR_ACCENT}]",
+                box=box.ROUNDED,
+                border_style=COLOR_ACCENT,
+            ))
+            pause()
+        else:
+            CONSOLE.print(f"[{COLOR_ACCENT}]Automatic install is not available for {name}.[/{COLOR_ACCENT}]")
+            CONSOLE.print(f"[bold white]Instructions:[/bold white] [yellow]{instructions}[/yellow]")
+        return False, f"Manual install required for {name}."
+
+    if not skip_confirm:
+        confirmed = _confirm_cli_or_panel(
+            "Install agent?",
+            f"Install [bold white]{name}[/bold white] ([cyan]{cmd}[/cyan])?\n\n"
+            f"Command: [bold yellow]{install_cmd}[/bold yellow]",
+            f"Install [bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) using `[yellow]{install_cmd}[/yellow]`?",
+            interactive=interactive,
+        )
+        if not confirmed:
+            if not interactive:
+                CONSOLE.print(f"[{COLOR_MUTED}]Installation cancelled.[/{COLOR_MUTED}]")
+            return False, "Installation cancelled."
+
+    if interactive:
+        CONSOLE.clear()
+    CONSOLE.print(Panel(
+        f"[bold {COLOR_PRIMARY}]Installing {name}...[/bold {COLOR_PRIMARY}]\n"
+        f"Command: [bold yellow]{install_cmd}[/bold yellow]",
+        title=f"[bold {COLOR_PRIMARY}]AgentHub Installer[/bold {COLOR_PRIMARY}]",
+        box=box.ROUNDED,
+        border_style=COLOR_PRIMARY,
+    ))
+
+    try:
+        proc = subprocess.run(install_cmd, cwd=os.getcwd(), shell=True)
+        ok = proc.returncode == 0
+    except Exception as exc:
+        ok = False
+        CONSOLE.print(f"[{COLOR_MISSING}]Error running installer: {exc}[/{COLOR_MISSING}]")
+
+    if not ok:
+        CONSOLE.print(f"\n[{COLOR_MISSING}]✗ Installation failed for {name}.[/{COLOR_MISSING}]")
+        if interactive:
+            pause()
+        return False, f"Failed to install {name}."
+
+    ensure_search_path()
+    for key in _agent_keys(entry):
+        set_agent_hidden(config, key, False)
+
+    config, _added = sync_config(config, config_path, announce=False)
+    save_config(config, config_path, quiet=True)
+
+    resolved_cmd, exe = _find_installed_command(entry)
+    if exe:
+        ver = get_version(resolved_cmd)
+        CONSOLE.print(
+            f"\n[{COLOR_READY}]✓ Installed {name} ({ver}) at {exe}[/{COLOR_READY}]"
+        )
+        if interactive:
+            pause()
+        return True, f"✓ Installed {name} ({ver})"
+
+    CONSOLE.print(
+        f"\n[{COLOR_ACCENT}]✓ Installer finished, but '{cmd}' was not found on PATH yet. "
+        f"Restart your terminal if needed.[/{COLOR_ACCENT}]"
+    )
+    if interactive:
+        pause()
+    return True, f"✓ Ran installer for {name}"
+
+
+def run_uninstall_agent(
+    entry: dict[str, Any],
+    config: dict[str, Any],
+    config_path: Path,
+    *,
+    skip_confirm: bool = False,
+    interactive: bool = True,
+) -> tuple[bool, str]:
+    """Uninstall *entry* from the system and clean it from *config*. Returns ``(success, status_note)``."""
+    cmd, exe = _find_installed_command(entry)
+    name = str(entry.get("name", cmd) or cmd)
+
+    if not exe:
+        msg = f"{name} ({cmd}) is not installed or not found on PATH."
+        if interactive:
+            CONSOLE.clear()
+            CONSOLE.print(Panel(
+                f"[{COLOR_MISSING}]{msg}[/{COLOR_MISSING}]\n\n"
+                f"[{COLOR_MUTED}]Use 'Remove agent' in Settings to remove missing entries from configuration.[/{COLOR_MUTED}]",
+                title=f"[bold {COLOR_PRIMARY}]Uninstall agent[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+            pause()
+        else:
+            CONSOLE.print(f"[{COLOR_MISSING}]{msg}[/{COLOR_MISSING}]")
+        return False, f"{name} is not installed."
+
+    uninstall_cmd = resolve_uninstall_command({**entry, "command": cmd, "exe_path": exe})
+    if uninstall_cmd is None:
+        if interactive:
+            CONSOLE.clear()
+            CONSOLE.print(Panel(
+                f"[bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) does not have an automatic uninstall command.\n\n"
+                f"[bold white]Binary path:[/bold white] [dim]{exe}[/dim]\n"
+                f"[{COLOR_MUTED}]Uninstall it using its native installer or system settings, "
+                f"or use 'Remove agent' in Settings to remove it from AgentHub.[/{COLOR_MUTED}]",
+                title=f"[bold {COLOR_ACCENT}]Manual Uninstall Required[/bold {COLOR_ACCENT}]",
+                box=box.ROUNDED,
+                border_style=COLOR_ACCENT,
+            ))
+            pause()
+        else:
+            CONSOLE.print(f"[{COLOR_ACCENT}]Automatic uninstall is not available for {name}.[/{COLOR_ACCENT}]")
+            CONSOLE.print(f"[bold white]Binary path:[/bold white] {exe}")
+            CONSOLE.print(f"[{COLOR_MUTED}]Use [bold]agenthub remove {cmd}[/bold] to remove it from configuration only.[/{COLOR_MUTED}]")
+        return False, f"Manual uninstall required for {name}."
+
+    if not skip_confirm:
+        confirmed = _confirm_cli_or_panel(
+            "Uninstall agent?",
+            f"Uninstall [bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) from your system?\n\n"
+            f"Command: [bold yellow]{uninstall_cmd}[/bold yellow]\n\n"
+            f"[{COLOR_MUTED}]This also removes {name} from AgentHub's configuration. "
+            f"User config directories are left untouched.[/{COLOR_MUTED}]",
+            f"Uninstall [bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) using `[yellow]{uninstall_cmd}[/yellow]`?",
+            interactive=interactive,
+            danger=True,
+        )
+        if not confirmed:
+            if not interactive:
+                CONSOLE.print(f"[{COLOR_MUTED}]Uninstall cancelled.[/{COLOR_MUTED}]")
+            return False, "Uninstall cancelled."
+
+    if interactive:
+        CONSOLE.clear()
+    CONSOLE.print(Panel(
+        f"[bold {COLOR_MISSING}]Uninstalling {name}...[/bold {COLOR_MISSING}]\n"
+        f"Command: [bold yellow]{uninstall_cmd}[/bold yellow]",
+        title=f"[bold {COLOR_MISSING}]AgentHub Uninstaller[/bold {COLOR_MISSING}]",
+        box=box.ROUNDED,
+        border_style=COLOR_MISSING,
+    ))
+
+    try:
+        proc = subprocess.run(uninstall_cmd, cwd=os.getcwd(), shell=True)
+        ok = proc.returncode == 0
+    except Exception as exc:
+        ok = False
+        CONSOLE.print(f"[{COLOR_MISSING}]Error running uninstaller: {exc}[/{COLOR_MISSING}]")
+
+    if not ok:
+        CONSOLE.print(f"\n[{COLOR_MISSING}]✗ Uninstall failed for {name}.[/{COLOR_MISSING}]")
+        if interactive:
+            pause()
+        return False, f"Failed to uninstall {name}."
+
+    keys = _agent_keys(entry) | {cmd.lower()}
+    config["agents"] = [
+        a for a in config.get("agents", [])
+        if str(a.get("command", "")).strip().lower() not in keys
+    ]
+
+    _still_cmd, still_exe = _find_installed_command(entry)
+    if still_exe:
+        set_agent_hidden(config, cmd, True)
+        CONSOLE.print(
+            f"\n[{COLOR_ACCENT}]✓ Uninstaller finished, but '{cmd}' is still present at {still_exe}. "
+            f"Removed from AgentHub and added to ignored list.[/{COLOR_ACCENT}]"
+        )
+    else:
+        for key in keys:
+            set_agent_hidden(config, key, False)
+        CONSOLE.print(
+            f"\n[{COLOR_READY}]✓ Uninstalled {name} ({cmd}) and removed from configuration.[/{COLOR_READY}]"
+        )
+        CONSOLE.print(f"[{COLOR_MUTED}]User configuration files were left untouched.[/{COLOR_MUTED}]")
+
+    save_config(config, config_path, quiet=True)
+    if interactive:
+        pause()
+    return True, f"✓ Uninstalled {name} ({cmd})"
+
+
+def install_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Interactive keyboard-driven menu to install an agent."""
+    status_note = ""
+    while True:
+        candidates = installable_agents(config)
+        if not candidates:
+            CONSOLE.clear()
+            message = "[bold white]All known catalog and configured agents are already installed.[/bold white]"
+            if status_note:
+                message = f"{status_note}\n\n{message}"
+            CONSOLE.print(Panel(
+                message,
+                title=f"[bold {COLOR_PRIMARY}]Install agent[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+            pause()
+            return config
+
+        options: list[tuple[str, str, str]] = []
+        for idx, entry in enumerate(candidates):
+            cmd = str(entry.get("command", "")).strip()
+            name = str(entry.get("name", cmd) or cmd)
+            install_cmd = resolve_install_command(entry)
+            hint = f"{cmd} · {install_cmd}" if install_cmd else f"{cmd} · manual install"
+            options.append((f"idx:{idx}", name, hint))
+        options.append(("back", "Back", ""))
+
+        choice = pick_from_menu(
+            "Install agent",
+            options,
+            subtitle=status_note or "Select an agent to install",
+        )
+        if choice == "back":
+            return config
+
+        idx = int(choice.split(":", 1)[1])
+        _ok, status_note = run_install_agent(candidates[idx], config, config_path, interactive=True)
+
+
+def uninstall_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Interactive keyboard-driven menu to uninstall an installed agent."""
+    status_note = ""
+    while True:
+        candidates = uninstallable_agents(config)
+        if not candidates:
+            CONSOLE.clear()
+            message = "[bold white]No installed agents found to uninstall.[/bold white]"
+            if status_note:
+                message = f"{status_note}\n\n{message}"
+            CONSOLE.print(Panel(
+                message,
+                title=f"[bold {COLOR_PRIMARY}]Uninstall agent[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+            pause()
+            return config
+
+        options: list[tuple[str, str, str]] = []
+        for idx, entry in enumerate(candidates):
+            cmd = str(entry.get("command", "")).strip()
+            name = str(entry.get("name", cmd) or cmd)
+            uninstall_cmd = resolve_uninstall_command(entry)
+            hint = f"{cmd} · {uninstall_cmd}" if uninstall_cmd else f"{cmd} · manual uninstall"
+            options.append((f"idx:{idx}", name, hint))
+        options.append(("back", "Back", ""))
+
+        choice = pick_from_menu(
+            "Uninstall agent",
+            options,
+            subtitle=status_note or "Select an installed agent to uninstall from your system",
+        )
+        if choice == "back":
+            return config
+
+        idx = int(choice.split(":", 1)[1])
+        _ok, status_note = run_uninstall_agent(candidates[idx], config, config_path, interactive=True)
+
+
 # ---------------------------------------------------------------------------
 # Settings & Configuration Sub-Menu
 # ---------------------------------------------------------------------------
@@ -1435,7 +1988,9 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
             [
                 ("details", "Agent details", f"{len(agents)} visible"),
                 ("visibility", "Show / hide agents", f"{len(hidden)} hidden"),
-                ("remove", "Remove agent", f"{configured_count} configured"),
+                ("install", "Install agent", ""),
+                ("uninstall", "Uninstall agent", "system + config"),
+                ("remove", "Remove agent", f"{configured_count} configured · config only"),
                 ("open", "Open config file", ""),
                 ("reset", "Reset & re-detect", "clears hidden list"),
                 ("back", "Back", ""),
@@ -1450,6 +2005,10 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
             show_agent_details(agents)
         elif choice == "visibility":
             config = manage_visibility(config, config_path)
+        elif choice == "install":
+            config = install_agent_wizard(config, config_path)
+        elif choice == "uninstall":
+            config = uninstall_agent_wizard(config, config_path)
         elif choice == "remove":
             config = remove_agent_wizard(config, config_path)
         elif choice == "open":
@@ -1594,6 +2153,7 @@ def show_agent_details(agents: list[dict[str, Any]]) -> None:
     CONSOLE.print(f"[bold {COLOR_PRIMARY}]Configured Agent Specifications[/bold {COLOR_PRIMARY}]\n")
     for a in agents:
         status = f"[{COLOR_READY}]installed[/{COLOR_READY}]" if a["installed"] else f"[{COLOR_MISSING}]missing[/{COLOR_MISSING}]"
+        uninstall_display = a.get("uninstall_method") or resolve_uninstall_command(a) or "—"
         lines = [
             f"[bold white]Command:[/]     [cyan]{a['command']}[/cyan]",
             f"[bold white]Status:[/]      {status}",
@@ -1602,6 +2162,7 @@ def show_agent_details(agents: list[dict[str, Any]]) -> None:
             f"[bold white]Description:[/] {a.get('description', '—')}",
             f"[bold white]Install:[/]     [yellow]{a.get('install_method', '—')}[/yellow]",
             f"[bold white]Update:[/]      [yellow]{a.get('update_method', '—')}[/yellow]",
+            f"[bold white]Uninstall:[/]   [yellow]{uninstall_display}[/yellow]",
         ]
         cfg_locs = a.get("config_locations", [])
         if cfg_locs:
@@ -1629,6 +2190,8 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
     description = Prompt.ask("  Description", default="AI pair programmer in the terminal")
     install_method = Prompt.ask("  Install command", default=f"pip install {command}")
     update_method = Prompt.ask("  Update command", default=f"pip install --upgrade {command}")
+    default_uninstall = _derive_uninstall_from_install(install_method) or ""
+    uninstall_method = Prompt.ask("  Uninstall command (optional)", default=default_uninstall)
     cfg_loc = Prompt.ask("  Config location path (optional)", default="")
 
     new_agent = {
@@ -1637,6 +2200,7 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
         "description": description,
         "install_method": install_method,
         "update_method": update_method,
+        "uninstall_method": uninstall_method,
         "config_locations": [cfg_loc] if cfg_loc else [],
         "source": "user",
     }
@@ -1682,6 +2246,8 @@ Examples:
   agenthub launch agy      # Directly launch Antigravity CLI (agy)
   agenthub launch claude   # Directly launch Claude Code
   agenthub doctor          # Run environment and PATH diagnostics
+  agenthub install claude  # Install an AI CLI agent
+  agenthub uninstall claude # Uninstall an AI CLI agent from your system
   agenthub update          # Check and update installed agents
   agenthub add             # Add a new CLI agent interactively
   agenthub remove codex    # Remove an agent from configuration
@@ -1709,6 +2275,39 @@ Examples:
 
     # doctor
     subparsers.add_parser("doctor", aliases=["check"], help="Run diagnostics on environment, PATH, and agents")
+
+    # install
+    p_install = subparsers.add_parser(
+        "install",
+        aliases=["i"],
+        help="Install an AI CLI agent",
+    )
+    p_install.add_argument(
+        "agent",
+        nargs="?",
+        help="Optional agent command or name to install (e.g. claude, aider)",
+    )
+    p_install.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
+    # uninstall
+    p_uninstall = subparsers.add_parser(
+        "uninstall",
+        help="Uninstall an installed AI CLI agent and remove it from configuration",
+    )
+    p_uninstall.add_argument(
+        "agent",
+        nargs="?",
+        help="Optional agent command, name, or number to uninstall (e.g. codex, 1)",
+    )
+    p_uninstall.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
 
     # update
     p_update = subparsers.add_parser("update", help="Update installed CLI agents")
@@ -1816,6 +2415,58 @@ def main() -> None:
         run_doctor(agents, config_path, interactive=False)
         return
 
+    if args.subcommand in ("install", "i"):
+        if not args.agent:
+            install_agent_wizard(config, config_path)
+            return
+
+        missing_candidates = installable_agents(config)
+        _idx, entry, err = _resolve_entry_in_list(
+            missing_candidates,
+            args.agent,
+            not_found_message=f"Agent '{args.agent}' not found in catalog or configuration.",
+        )
+        if entry is None:
+            installed_candidates = uninstallable_agents(config)
+            _i2, inst_entry, err2 = _resolve_entry_in_list(
+                installed_candidates,
+                args.agent,
+                index_entries=agents,
+            )
+            if inst_entry is not None:
+                run_install_agent(inst_entry, config, config_path, skip_confirm=args.yes, interactive=False)
+                return
+            CONSOLE.print(f"[{COLOR_MISSING}]{err or err2}[/{COLOR_MISSING}]")
+            CONSOLE.print("Run [bold cyan]agenthub doctor[/bold cyan] to see known catalog agents.")
+            sys.exit(1)
+
+        ok, note = run_install_agent(entry, config, config_path, skip_confirm=args.yes, interactive=False)
+        if not ok and note.startswith(("Failed", "Manual")):
+            sys.exit(1)
+        return
+
+    if args.subcommand == "uninstall":
+        if not args.agent:
+            uninstall_agent_wizard(config, config_path)
+            return
+
+        installed_candidates = uninstallable_agents(config)
+        _idx, entry, err = _resolve_entry_in_list(
+            installed_candidates,
+            args.agent,
+            index_entries=agents,
+            not_found_message=f"Installed agent '{args.agent}' not found.",
+        )
+        if entry is None:
+            CONSOLE.print(f"[{COLOR_MISSING}]{err}[/{COLOR_MISSING}]")
+            CONSOLE.print("Use [bold cyan]agenthub list[/bold cyan] to see installed agents.")
+            sys.exit(1)
+
+        ok, note = run_uninstall_agent(entry, config, config_path, skip_confirm=args.yes, interactive=False)
+        if not ok and note.startswith(("Failed", "Manual")):
+            sys.exit(1)
+        return
+
     if args.subcommand == "update":
         if args.agent:
             target = args.agent.strip().lower()
@@ -1896,6 +2547,9 @@ def main() -> None:
             if not added:
                 CONSOLE.print(f"[{COLOR_MUTED}]✓ Up to date — no new agents discovered.[/{COLOR_MUTED}]")
             pause()
+        elif action == "install":
+            config = install_agent_wizard(config, config_path)
+            agents = detect_agents(config)
         elif action == "doctor":
             run_doctor(agents, config_path, interactive=True)
         elif action == "update":

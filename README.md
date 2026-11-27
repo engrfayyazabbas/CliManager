@@ -127,9 +127,10 @@ agenthub
 This launches the interactive mission control. On startup AgentHub **auto-syncs**: it scans for installed AI CLIs, adds any new ones to your config, and shows them in the list. From here you can:
 - Press **1 - 9** (or use **↑ / ↓** and **Enter**) to launch any installed AI agent directly in the current directory.
 - Press **r** to sync and refresh (re-scan for newly installed agents).
+- Press **i** to install a new AI CLI agent from the catalog or configuration.
 - Press **d** to run AgentHub Doctor.
 - Press **u** to update all installed agents in one batch (one confirmation).
-- Press **s** for settings: agent details, show/hide agents, config file, reset.
+- Press **s** for settings: agent details, show/hide, install/uninstall, remove, config file, reset.
 - Press **q** to exit.
 
 ### 2. Direct CLI Subcommands
@@ -154,6 +155,14 @@ agenthub launch 1
 
 # Run system & environment health diagnostics (+ install suggestions)
 agenthub doctor
+
+# Install an agent from the catalog or config (interactive picker if omitted)
+agenthub install claude
+agenthub install claude --yes
+
+# Uninstall an installed agent from your system and remove from config
+agenthub uninstall claude
+agenthub uninstall claude --yes
 
 # Run every installed agent's update command in one batch
 agenthub update
@@ -186,9 +195,10 @@ agenthub config --open
 | **Enter** | Launch highlighted agent or execute selected action |
 | **1 – 9** | **Quick Launch**: immediately launch agent #1 through #9 |
 | **r** | **Sync & refresh**: re-scan PATH and common install dirs, register newly installed agents |
+| **i** | **Install agent**: install a missing catalog or configured agent |
 | **d** | **Doctor**: run environment, PATH, and config diagnostics |
 | **u** | **Update all agents**: one preview + one confirmation, then sequential batch update with live progress |
-| **s** | **Settings**: agent details, show/hide agents, config file, reset |
+| **s** | **Settings**: agent details, show/hide, install/uninstall, remove, config file, reset |
 | **q** or **Esc** | **Quit**: exit AgentHub cleanly |
 
 Sub-screens use the same `↑ / ↓` (or `j / k`), `Enter`, number-jump and `q` controls as the main menu — no more numbered text prompts.
@@ -203,12 +213,16 @@ Sub-screens use the same `↑ / ↓` (or `j / k`), `Enter`, number-jump and `q` 
 
 **Update all agents (`u`)** — shows one preview table of every installed agent that has an update command, asks **one** confirmation, then runs all updates sequentially with a live progress table and a final success/failure summary. No per-agent questions. Use `agenthub update <agent>` to target a single agent.
 
-**Settings (`s`)** — five options:
+**Install agent (`i`)** — lists missing catalog and configured agents, runs the package-manager install command (or shows manual instructions when an installer URL is required), and registers the agent immediately.
+
+**Settings (`s`)** — seven options:
 1. **Agent details** — versions, binary paths, config locations.
 2. **Show / hide agents** — `Enter` toggles visibility. Hidden agents are skipped by auto-sync, so they stay hidden after restarts (stored in the `ignored` list in config).
-3. **Remove agent** — removes an agent from `agents.json` (installed catalog agents are added to `ignored` so auto-sync won't re-add them).
-4. **Open config file** — opens `agents.json` in your editor.
-5. **Reset & re-detect** — clears agents and the hidden list, then re-scans installed CLIs.
+3. **Install agent** — install a missing catalog or configured agent.
+4. **Uninstall agent** — runs the agent's package-manager uninstall command (`npm`, `uv tool`, `pip`, etc.) and removes it from `agents.json` (leaving user config directories untouched).
+5. **Remove agent** — removes an agent from `agents.json` only (installed catalog agents are added to `ignored` so auto-sync won't re-add them).
+6. **Open config file** — opens `agents.json` in your editor.
+7. **Reset & re-detect** — clears agents and the hidden list, then re-scans installed CLIs.
 
 ---
 

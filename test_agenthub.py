@@ -32,6 +32,12 @@ from agenthub import (
     set_agent_hidden,
     resolve_agent_for_removal,
     remove_agent_from_config,
+    resolve_install_command,
+    resolve_uninstall_command,
+    installable_agents,
+    uninstallable_agents,
+    run_install_agent,
+    run_uninstall_agent,
     updatable_agents,
     VERSION,
 )
@@ -267,7 +273,28 @@ assert all(a["command"] != "codex" for a in merged["agents"])
 print("✓ Remove agent: index/name resolution, ambiguity guard, auto-sync suppression")
 
 # ---------------------------------------------------------------------------
-# 9. Batch update target selection
+# 9. Install / Uninstall command resolution
+# ---------------------------------------------------------------------------
+assert resolve_install_command({"install_method": "npm install -g @openai/codex"}) == "npm install -g @openai/codex"
+assert resolve_install_command({"install_method": "See https://docs.factory.ai"}) is None
+assert resolve_install_command({"install_method": "Install from https://cursor.com"}) is None
+
+assert resolve_uninstall_command({"command": "codex", "install_method": "npm install -g @openai/codex"}) == "npm uninstall -g @openai/codex"
+assert resolve_uninstall_command({"command": "kimi", "install_method": "uv tool install kimi-cli"}) == "uv tool uninstall kimi-cli"
+assert resolve_uninstall_command({"command": "custom", "install_method": "pip install --upgrade custom-cli"}) == "pip uninstall -y custom-cli"
+assert resolve_uninstall_command({"command": "aider", "uninstall_method": "pip uninstall -y aider-chat  (or: uv tool uninstall aider-chat)", "exe_path": "C:/Users/u/uv/tools/aider/Scripts/aider.exe"}) == "uv tool uninstall aider-chat"
+assert resolve_uninstall_command({"command": "droid", "install_method": "See https://docs.factory.ai"}) is None
+
+inst_cfg = {
+    "agents": [{"name": "My Missing Tool", "command": "nonexistent_custom_tool_xyz", "install_method": "pip install nonexistent_custom_tool_xyz"}],
+    "ignored": [],
+}
+cand_cmds = {a["command"] for a in installable_agents(inst_cfg)}
+assert "nonexistent_custom_tool_xyz" in cand_cmds
+print("✓ Install/Uninstall: command resolution, uv/pip inference, manual guard")
+
+# ---------------------------------------------------------------------------
+# 10. Batch update target selection
 # ---------------------------------------------------------------------------
 candidates = [
     {"name": "A", "command": "a", "installed": True, "update_method": "a --update"},
@@ -308,7 +335,21 @@ args = parser.parse_args(["rm"])
 assert args.subcommand == "rm"
 assert args.agent is None
 assert args.yes is False
-print("✓ Parser: sync, --no-sync, launch, doctor, remove/rm")
+
+args = parser.parse_args(["install", "claude", "-y"])
+assert args.subcommand == "install"
+assert args.agent == "claude"
+assert args.yes is True
+
+args = parser.parse_args(["i"])
+assert args.subcommand == "i"
+assert args.agent is None
+
+args = parser.parse_args(["uninstall", "codex", "--yes"])
+assert args.subcommand == "uninstall"
+assert args.agent == "codex"
+assert args.yes is True
+print("✓ Parser: sync, --no-sync, launch, doctor, remove/rm, install/i, uninstall")
 
 # ---------------------------------------------------------------------------
 # 10. Shared sub-menu + batch update UI (mocked, no real key/command execution)
@@ -387,6 +428,66 @@ try:
     assert [a["command"] for a in updated_wiz_cfg["agents"]] == ["beta_nonexistent_cmd"]
     saved_wiz = json.loads(wiz_tmp.read_text(encoding="utf-8"))
     assert [a["command"] for a in saved_wiz["agents"]] == ["beta_nonexistent_cmd"]
+
+    # run_install_agent and run_uninstall_agent (mocked subprocess + find_executable)
+    io_tmp = Path(tempfile.mkdtemp(prefix="agenthub-inst-")) / "agents.json"
+    io_cfg = {"agents": [], "ignored": ["fakecli"]}
+    io_tmp.write_text(json.dumps(io_cfg), encoding="utf-8")
+    fake_installed = {"fakecli": False}
+    io_commands: list[str] = []
+
+    _orig_which = agenthub.find_executable
+    _orig_sync = agenthub.sync_config
+    _orig_ver = agenthub.get_version
+    _orig_run2 = agenthub.subprocess.run
+    _orig_pause2 = agenthub.pause
+
+    def fake_which(cmd):
+        if cmd == "fakecli":
+            return "/usr/local/bin/fakecli" if fake_installed["fakecli"] else None
+        return _orig_which(cmd)
+
+    def fake_io_run(command, **_kwargs):
+        io_commands.append(command)
+        if "install" in command and "uninstall" not in command:
+            fake_installed["fakecli"] = True
+        elif "uninstall" in command:
+            fake_installed["fakecli"] = False
+        return types.SimpleNamespace(returncode=0)
+
+    def fake_sync(cfg, cfg_path, announce=False):
+        if fake_installed["fakecli"] and all(a["command"] != "fakecli" for a in cfg["agents"]):
+            cfg["agents"].append({"name": "Fake CLI", "command": "fakecli"})
+        return cfg, []
+
+    agenthub.find_executable = fake_which
+    agenthub.sync_config = fake_sync
+    agenthub.get_version = lambda _cmd: "1.2.3"
+    agenthub.subprocess.run = fake_io_run
+    agenthub.pause = lambda *_a, **_k: None
+    try:
+        fake_entry = {
+            "name": "Fake CLI",
+            "command": "fakecli",
+            "install_method": "npm install -g fakecli",
+        }
+        ok_inst, note_inst = run_install_agent(fake_entry, io_cfg, io_tmp, skip_confirm=True, interactive=False)
+        assert ok_inst is True and "1.2.3" in note_inst
+        assert io_commands[-1] == "npm install -g fakecli"
+        assert "fakecli" not in hidden_commands(io_cfg)
+        assert any(a["command"] == "fakecli" for a in io_cfg["agents"])
+
+        ok_uninst, note_uninst = run_uninstall_agent(fake_entry, io_cfg, io_tmp, skip_confirm=True, interactive=False)
+        assert ok_uninst is True and "Uninstalled" in note_uninst
+        assert io_commands[-1] == "npm uninstall -g fakecli"
+        assert all(a["command"] != "fakecli" for a in io_cfg["agents"])
+        assert "fakecli" not in hidden_commands(io_cfg)
+    finally:
+        agenthub.find_executable = _orig_which
+        agenthub.sync_config = _orig_sync
+        agenthub.get_version = _orig_ver
+        agenthub.subprocess.run = _orig_run2
+        agenthub.pause = _orig_pause2
 finally:
     agenthub.CONSOLE = _orig_console
     agenthub.read_navigation_key = _orig_key

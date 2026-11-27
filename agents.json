@@ -20,7 +20,8 @@
       "config_locations": [
         "%USERPROFILE%\\.codex",
         "%USERPROFILE%\\.codex\\config.json"
-      ]
+      ],
+      "uninstall_method": "npm uninstall -g @openai/codex"
     },
     {
       "name": "OpenCode CLI",
@@ -30,7 +31,8 @@
       "update_method": "npm update -g opencode-ai",
       "config_locations": [
         "%USERPROFILE%\\.opencode"
-      ]
+      ],
+      "uninstall_method": "npm uninstall -g opencode-ai"
     },
     {
       "name": "Cursor CLI",
@@ -62,6 +64,19 @@
       "update_method": "npm update -g @github/copilot",
       "config_locations": [
         "~/.config/github-copilot"
+      ],
+      "source": "catalog",
+      "uninstall_method": "npm uninstall -g @github/copilot"
+    },
+    {
+      "name": "Amp",
+      "command": "amp",
+      "description": "Sourcegraph Amp coding agent",
+      "install_method": "npm install -g @sourcegraph/amp",
+      "update_method": "npm update -g @sourcegraph/amp",
+      "uninstall_method": "npm uninstall -g @sourcegraph/amp",
+      "config_locations": [
+        "~/.config/amp"
       ],
       "source": "catalog"
     }
