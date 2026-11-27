@@ -1251,6 +1251,44 @@ def pause(message: str = "Press any key to return") -> None:
     read_navigation_key()
     CONSOLE.print()
 
+
+def show_return_panel(
+    agent_name: str,
+    *,
+    status: str = "complete",
+    detail: str = "",
+) -> None:
+    """Styled handoff panel shown after an agent session ends."""
+    if status == "interrupted":
+        headline = f"[bold {COLOR_ACCENT}]Session interrupted[/bold {COLOR_ACCENT}]"
+        border = COLOR_ACCENT
+    elif status == "error":
+        headline = f"[bold {COLOR_MISSING}]Session failed[/bold {COLOR_MISSING}]"
+        border = COLOR_MISSING
+    else:
+        headline = f"[bold {COLOR_READY}]Session complete[/bold {COLOR_READY}]"
+        border = COLOR_READY
+
+    body = (
+        f"{headline}\n"
+        f"Returned from [bold white]{agent_name}[/bold white]\n"
+        f"Workdir:  [dim]{os.getcwd()}[/dim]"
+    )
+    if detail:
+        body += f"\n\n[{COLOR_MISSING}]{detail}[/{COLOR_MISSING}]"
+    body += (
+        "\n\n[dim]Back in AgentHub — pick another agent or press q to quit.[/dim]"
+    )
+
+    CONSOLE.print()
+    CONSOLE.print(Panel(
+        body,
+        title=f"[bold {border}]● Back to AgentHub[/bold {border}]",
+        box=box.ROUNDED,
+        border_style=border,
+        padding=(1, 2),
+    ))
+
 # ---------------------------------------------------------------------------
 # Agent Execution & Diagnostics
 # ---------------------------------------------------------------------------
@@ -1269,7 +1307,7 @@ def launch_agent(agent: dict[str, Any], interactive: bool = False) -> None:
             border_style=COLOR_MISSING,
         ))
         if interactive:
-            Prompt.ask("\nPress Enter to return to menu", default="")
+            pause("Press any key to return to AgentHub")
         return
 
     CONSOLE.print(Panel(
@@ -1283,16 +1321,25 @@ def launch_agent(agent: dict[str, Any], interactive: bool = False) -> None:
         border_style=COLOR_READY,
     ))
 
+    status = "complete"
+    detail = ""
     try:
         subprocess.run(agent["command"], cwd=os.getcwd(), shell=True)
     except KeyboardInterrupt:
-        CONSOLE.print(f"\n[yellow]{agent['name']} session ended by user.[/yellow]")
+        status = "interrupted"
     except Exception as e:
-        CONSOLE.print(f"\n[{COLOR_MISSING}]Error running {agent['name']}: {e}[/{COLOR_MISSING}]")
+        status = "error"
+        detail = str(e)
 
-    CONSOLE.print(f"\n[dim]Returned from {agent['name']}.[/dim]")
     if interactive:
-        Prompt.ask("\nPress Enter to continue", default="")
+        show_return_panel(agent["name"], status=status, detail=detail)
+        pause("Press any key to return to AgentHub")
+    else:
+        CONSOLE.print(f"\n[dim]Returned from {agent['name']}.[/dim]")
+        if status == "interrupted":
+            CONSOLE.print(f"[yellow]{agent['name']} session ended by user.[/yellow]")
+        elif status == "error":
+            CONSOLE.print(f"[{COLOR_MISSING}]Error running {agent['name']}: {detail}[/{COLOR_MISSING}]")
 
 
 def run_doctor(agents: list[dict[str, Any]], config_path: Path, interactive: bool = False) -> None:
@@ -2209,7 +2256,7 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
     set_agent_hidden(config, command, False)
     save_config(config, config_path)
     CONSOLE.print(f"[{COLOR_READY}]✓ Added {name} successfully![/{COLOR_READY}]")
-    Prompt.ask("\nPress Enter to continue", default="")
+    pause("Press any key to return to AgentHub")
     return config
 
 
