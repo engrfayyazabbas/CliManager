@@ -42,6 +42,29 @@
         "%APPDATA%\\Cursor",
         "%USERPROFILE%\\.cursor"
       ]
+    },
+    {
+      "name": "Qwen Code",
+      "command": "qwen",
+      "description": "Alibaba's Qwen coding agent CLI",
+      "install_method": "npm install -g @qwen-code/qwen-code",
+      "update_method": "npm update -g @qwen-code/qwen-code",
+      "config_locations": [
+        "~/.qwen"
+      ],
+      "source": "catalog"
+    },
+    {
+      "name": "GitHub Copilot CLI",
+      "command": "copilot",
+      "description": "GitHub Copilot's terminal agent",
+      "install_method": "npm install -g @github/copilot",
+      "update_method": "npm update -g @github/copilot",
+      "config_locations": [
+        "~/.config/github-copilot"
+      ],
+      "source": "catalog"
     }
-  ]
+  ],
+  "ignored": []
 }

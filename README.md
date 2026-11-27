@@ -164,6 +164,10 @@ agenthub update codex
 # Add a custom agent that isn't in the catalog (CLI-only escape hatch)
 agenthub add
 
+# Remove an agent from configuration (interactive picker if omitted)
+agenthub remove codex
+agenthub remove codex --yes
+
 # Skip auto-discovery for a single run
 agenthub --no-sync list
 
@@ -199,11 +203,12 @@ Sub-screens use the same `↑ / ↓` (or `j / k`), `Enter`, number-jump and `q` 
 
 **Update all agents (`u`)** — shows one preview table of every installed agent that has an update command, asks **one** confirmation, then runs all updates sequentially with a live progress table and a final success/failure summary. No per-agent questions. Use `agenthub update <agent>` to target a single agent.
 
-**Settings (`s`)** — four options:
+**Settings (`s`)** — five options:
 1. **Agent details** — versions, binary paths, config locations.
 2. **Show / hide agents** — `Enter` toggles visibility. Hidden agents are skipped by auto-sync, so they stay hidden after restarts (stored in the `ignored` list in config).
-3. **Open config file** — opens `agents.json` in your editor.
-4. **Reset & re-detect** — clears agents and the hidden list, then re-scans installed CLIs.
+3. **Remove agent** — removes an agent from `agents.json` (installed catalog agents are added to `ignored` so auto-sync won't re-add them).
+4. **Open config file** — opens `agents.json` in your editor.
+5. **Reset & re-detect** — clears agents and the hidden list, then re-scans installed CLIs.
 
 ---
 

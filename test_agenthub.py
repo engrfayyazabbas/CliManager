@@ -30,6 +30,8 @@ from agenthub import (
     ensure_search_path,
     hidden_commands,
     set_agent_hidden,
+    resolve_agent_for_removal,
+    remove_agent_from_config,
     updatable_agents,
     VERSION,
 )
@@ -208,7 +210,64 @@ assert len(detect_agents(merged)) == 1, "Unhidden agent did not reappear"
 print("✓ Hidden agents: filtered, skipped by sync, restorable")
 
 # ---------------------------------------------------------------------------
-# 8. Batch update target selection
+# 8. Remove agent: resolution, removal, ignored handling, ambiguity
+# ---------------------------------------------------------------------------
+rem_cfg = {
+    "agents": [
+        {"name": "Codex CLI", "command": "codex"},
+        {"name": "Cursor CLI", "command": "agent"},
+        {"name": "Custom Tool", "command": "mytool"},
+        {"name": "Custom Tool Two", "command": "mytool2"},
+    ],
+    "ignored": [],
+}
+visible_snapshot = [
+    {"name": "Codex CLI", "command": "codex"},
+    {"name": "Cursor CLI", "command": "agent"},
+    {"name": "Custom Tool", "command": "mytool"},
+    {"name": "Custom Tool Two", "command": "mytool2"},
+]
+
+# Ambiguous partial match returns error instead of removing
+idx, entry, err = resolve_agent_for_removal(rem_cfg, "Custom", visible_agents=visible_snapshot)
+assert idx is None and entry is None and err and "Multiple" in err
+
+# Exact command match still wins even if it is a prefix of another command
+idx, entry, err = resolve_agent_for_removal(rem_cfg, "mytool", visible_agents=visible_snapshot)
+assert err is None and idx == 2 and entry["command"] == "mytool"
+
+# Resolve by 1-based visible index (2 -> Cursor CLI)
+idx, entry, err = resolve_agent_for_removal(rem_cfg, "2", visible_agents=visible_snapshot)
+assert err is None and idx == 1 and entry["command"] == "agent"
+
+# Remove non-discovered agent: does not pollute ignored
+removed, ignored_added = remove_agent_from_config(
+    rem_cfg, idx, discovered=[{"name": "Codex CLI", "command": "codex"}]
+)
+assert removed["command"] == "agent"
+assert ignored_added is False
+assert rem_cfg["ignored"] == []
+
+# Remove installed catalog agent: added to ignored so auto-sync skips it
+idx, entry, err = resolve_agent_for_removal(rem_cfg, "codex", visible_agents=visible_snapshot)
+assert err is None and idx == 0
+removed, ignored_added = remove_agent_from_config(
+    rem_cfg, idx, discovered=[{"name": "Codex CLI", "command": "codex"}]
+)
+assert removed["command"] == "codex"
+assert ignored_added is True
+assert hidden_commands(rem_cfg) == {"codex"}
+
+# Auto-sync skips the removed discovered agent
+merged, added, _ = merge_discovered_agents(
+    rem_cfg, [{"name": "Codex CLI", "command": "codex", "description": "", "install_method": "", "update_method": "", "config_locations": []}]
+)
+assert added == []
+assert all(a["command"] != "codex" for a in merged["agents"])
+print("✓ Remove agent: index/name resolution, ambiguity guard, auto-sync suppression")
+
+# ---------------------------------------------------------------------------
+# 9. Batch update target selection
 # ---------------------------------------------------------------------------
 candidates = [
     {"name": "A", "command": "a", "installed": True, "update_method": "a --update"},
@@ -219,7 +278,7 @@ assert [a["command"] for a in updatable_agents(candidates)] == ["a"]
 print("✓ Batch update: only installed agents with update commands")
 
 # ---------------------------------------------------------------------------
-# 9. Parser: --no-sync flag and sync subcommand
+# 10. Parser: --no-sync flag, sync, launch, doctor, remove
 # ---------------------------------------------------------------------------
 parser = build_parser()
 
@@ -239,7 +298,17 @@ assert args.agent == "codex"
 
 args = parser.parse_args(["doctor"])
 assert args.subcommand == "doctor"
-print("✓ Parser: sync, --no-sync, launch, doctor")
+
+args = parser.parse_args(["remove", "codex", "--yes"])
+assert args.subcommand == "remove"
+assert args.agent == "codex"
+assert args.yes is True
+
+args = parser.parse_args(["rm"])
+assert args.subcommand == "rm"
+assert args.agent is None
+assert args.yes is False
+print("✓ Parser: sync, --no-sync, launch, doctor, remove/rm")
 
 # ---------------------------------------------------------------------------
 # 10. Shared sub-menu + batch update UI (mocked, no real key/command execution)
@@ -296,6 +365,28 @@ try:
         agenthub.pause = _orig_pause
 
     assert executed == ["a --update", "b --update"], f"Batch update ran: {executed}"
+
+    # remove_agent_wizard: select first agent, confirm, then back
+    wiz_tmp = Path(tempfile.mkdtemp(prefix="agenthub-remove-")) / "agents.json"
+    wiz_cfg = {
+        "agents": [
+            {"name": "Alpha", "command": "alpha_nonexistent_cmd"},
+            {"name": "Beta", "command": "beta_nonexistent_cmd"},
+        ],
+        "ignored": [],
+    }
+    wiz_tmp.write_text(json.dumps(wiz_cfg), encoding="utf-8")
+    keys = iter(["enter", "down", "enter"])
+    agenthub.read_navigation_key = lambda: next(keys)
+    _orig_wiz_confirm = agenthub.confirm_panel
+    agenthub.confirm_panel = lambda *_a, **_k: True
+    try:
+        updated_wiz_cfg = agenthub.remove_agent_wizard(wiz_cfg, wiz_tmp)
+    finally:
+        agenthub.confirm_panel = _orig_wiz_confirm
+    assert [a["command"] for a in updated_wiz_cfg["agents"]] == ["beta_nonexistent_cmd"]
+    saved_wiz = json.loads(wiz_tmp.read_text(encoding="utf-8"))
+    assert [a["command"] for a in saved_wiz["agents"]] == ["beta_nonexistent_cmd"]
 finally:
     agenthub.CONSOLE = _orig_console
     agenthub.read_navigation_key = _orig_key

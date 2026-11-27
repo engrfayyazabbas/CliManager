@@ -262,11 +262,123 @@ def set_agent_hidden(config: dict[str, Any], command: str, hidden: bool) -> None
     """Add or remove a command from the hidden list (persisted by the caller)."""
     commands = hidden_commands(config)
     cmd = command.strip().lower()
+    if not cmd:
+        return
     if hidden:
         commands.add(cmd)
     else:
         commands.discard(cmd)
     config["ignored"] = sorted(commands)
+
+
+def resolve_agent_for_removal(
+    config: dict[str, Any],
+    target: str,
+    *,
+    visible_agents: list[dict[str, Any]] | None = None,
+) -> tuple[int | None, dict[str, Any] | None, str | None]:
+    """
+    Resolve *target* (1-based visible index, exact command/name, or unique partial match)
+    to ``(config_index, entry, error_message)``.
+    """
+    raw = target.strip()
+    if not raw:
+        return None, None, "No agent specified."
+
+    configured = config.get("agents", [])
+    needle = raw.lower()
+
+    # 1. Numeric 1-based index into the visible agent list (matches `agenthub list`)
+    if raw.isdigit() and visible_agents is not None:
+        vis_idx = int(raw) - 1
+        if 0 <= vis_idx < len(visible_agents):
+            chosen = visible_agents[vis_idx]
+            chosen_cmd = str(chosen.get("command", "")).strip().lower()
+            chosen_name = str(chosen.get("name", "")).strip().lower()
+            for idx, entry in enumerate(configured):
+                if (
+                    str(entry.get("command", "")).strip().lower() == chosen_cmd
+                    and str(entry.get("name", "")).strip().lower() == chosen_name
+                ):
+                    return idx, entry, None
+            for idx, entry in enumerate(configured):
+                if str(entry.get("command", "")).strip().lower() == chosen_cmd:
+                    return idx, entry, None
+
+    # 2. Exact match on command or display name
+    for idx, entry in enumerate(configured):
+        cmd = str(entry.get("command", "")).strip().lower()
+        name = str(entry.get("name", "")).strip().lower()
+        if cmd == needle or name == needle:
+            return idx, entry, None
+
+    # 3. Unique partial match on command or display name
+    partial_matches = [
+        (idx, entry)
+        for idx, entry in enumerate(configured)
+        if needle in str(entry.get("command", "")).strip().lower()
+        or needle in str(entry.get("name", "")).strip().lower()
+    ]
+    if len(partial_matches) == 1:
+        idx, entry = partial_matches[0]
+        return idx, entry, None
+    if len(partial_matches) > 1:
+        names = ", ".join(
+            f"{e.get('name', e.get('command', ''))} ({e.get('command', '')})"
+            for _, e in partial_matches
+        )
+        return None, None, f"Multiple agents match '{target}': {names}. Be more specific."
+
+    return None, None, f"Agent '{target}' not found in configuration."
+
+
+def remove_agent_from_config(
+    config: dict[str, Any],
+    index: int,
+    *,
+    discovered: list[dict[str, Any]] | None = None,
+) -> tuple[dict[str, Any], bool]:
+    """
+    Remove the agent at *index* from ``config["agents"]``.
+
+    If the removed command corresponds to an installed catalog agent and no
+    remaining entry shares that command, add it to ``config["ignored"]`` so
+    auto-sync will not immediately re-add it. Otherwise remove it from
+    ``ignored`` if present.
+
+    Returns ``(removed_entry, added_to_ignored)``.
+    """
+    agents: list[dict[str, Any]] = config.setdefault("agents", [])
+    removed = agents.pop(index)
+    cmd = str(removed.get("command", "")).strip().lower()
+
+    if not cmd:
+        return removed, False
+
+    still_present = any(
+        str(a.get("command", "")).strip().lower() == cmd
+        for a in agents
+    )
+    if still_present:
+        return removed, False
+
+    if discovered is None:
+        discovered, _missing = discover_agents()
+
+    is_discovered = False
+    for entry in discovered:
+        names = [str(entry.get("command", "")).strip().lower()]
+        names += [str(a).strip().lower() for a in entry.get("aliases") or [] if a]
+        if cmd in names:
+            is_discovered = True
+            break
+
+    if is_discovered:
+        set_agent_hidden(config, cmd, True)
+        return removed, True
+
+    set_agent_hidden(config, cmd, False)
+    return removed, False
 
 
 def get_config_path() -> Path:
@@ -1316,12 +1428,14 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
     while True:
         agents = detect_agents(config)
         hidden = hidden_commands(config)
+        configured_count = len(config.get("agents", []))
 
         choice = pick_from_menu(
             "Settings",
             [
                 ("details", "Agent details", f"{len(agents)} visible"),
                 ("visibility", "Show / hide agents", f"{len(hidden)} hidden"),
+                ("remove", "Remove agent", f"{configured_count} configured"),
                 ("open", "Open config file", ""),
                 ("reset", "Reset & re-detect", "clears hidden list"),
                 ("back", "Back", ""),
@@ -1336,6 +1450,8 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
             show_agent_details(agents)
         elif choice == "visibility":
             config = manage_visibility(config, config_path)
+        elif choice == "remove":
+            config = remove_agent_wizard(config, config_path)
         elif choice == "open":
             open_config_file(config_path)
         elif choice == "reset":
@@ -1397,8 +1513,79 @@ def manage_visibility(config: dict[str, Any], config_path: Path) -> dict[str, An
         if choice == "back":
             return config
 
-        set_agent_hidden(config, choice, choice not in hidden)
+        was_hidden = choice in hidden
+        set_agent_hidden(config, choice, not was_hidden)
         save_config(config, config_path, quiet=True)
+        if was_hidden:
+            configured_cmds = {
+                str(a.get("command", "")).strip().lower()
+                for a in config.get("agents", [])
+            }
+            if choice not in configured_cmds:
+                config, _added = sync_config(config, config_path)
+
+
+def remove_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Interactive keyboard-driven flow to remove an agent from configuration."""
+    status_note = ""
+    while True:
+        configured = config.get("agents", [])
+        if not configured:
+            CONSOLE.clear()
+            message = "[bold white]No agents configured.[/bold white]"
+            if status_note:
+                message = f"{status_note}\n\n{message}"
+            CONSOLE.print(Panel(
+                message,
+                title=f"[bold {COLOR_PRIMARY}]Remove agent[/bold {COLOR_PRIMARY}]",
+                box=box.ROUNDED,
+                border_style=COLOR_PRIMARY,
+            ))
+            pause()
+            return config
+
+        hidden = hidden_commands(config)
+        options: list[tuple[str, str, str]] = []
+        for idx, entry in enumerate(configured):
+            cmd = str(entry.get("command", "")).strip()
+            name = str(entry.get("name", cmd) or cmd)
+            installed = "installed" if find_executable(cmd) else "not installed"
+            hint = f"{cmd} · {installed}"
+            if cmd.lower() in hidden:
+                hint += " · hidden"
+            options.append((f"idx:{idx}", name, hint))
+        options.append(("back", "Back", ""))
+
+        subtitle = status_note or "Select an agent to remove from AgentHub configuration"
+        choice = pick_from_menu(
+            "Remove agent",
+            options,
+            subtitle=subtitle,
+        )
+
+        if choice == "back":
+            return config
+
+        idx = int(choice.split(":", 1)[1])
+        target = configured[idx]
+        target_name = str(target.get("name", target.get("command", "")))
+        target_cmd = str(target.get("command", ""))
+
+        if confirm_panel(
+            "Remove agent?",
+            f"Remove [bold white]{target_name}[/bold white] ([cyan]{target_cmd}[/cyan]) from AgentHub?\n\n"
+            f"[{COLOR_MUTED}]Only removes the entry from your configuration; "
+            f"installed binaries on disk are not deleted.[/{COLOR_MUTED}]",
+            danger=True,
+        ):
+            removed, ignored_added = remove_agent_from_config(config, idx)
+            save_config(config, config_path, quiet=True)
+            note = f"✓ Removed {removed.get('name', target_cmd)} ({removed.get('command', '')})"
+            if ignored_added:
+                note += " · added to ignored list"
+            status_note = note
+        else:
+            status_note = "Removal cancelled."
 
 
 def show_agent_details(agents: list[dict[str, Any]]) -> None:
@@ -1455,6 +1642,7 @@ def add_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, Any
     }
 
     config.setdefault("agents", []).append(new_agent)
+    set_agent_hidden(config, command, False)
     save_config(config, config_path)
     CONSOLE.print(f"[{COLOR_READY}]✓ Added {name} successfully![/{COLOR_READY}]")
     Prompt.ask("\nPress Enter to continue", default="")
@@ -1496,6 +1684,7 @@ Examples:
   agenthub doctor          # Run environment and PATH diagnostics
   agenthub update          # Check and update installed agents
   agenthub add             # Add a new CLI agent interactively
+  agenthub remove codex    # Remove an agent from configuration
   agenthub config --path   # Display active configuration path
 """
     )
@@ -1527,6 +1716,23 @@ Examples:
 
     # add
     subparsers.add_parser("add", help="Add a new CLI agent configuration")
+
+    # remove
+    p_remove = subparsers.add_parser(
+        "remove",
+        aliases=["rm", "delete"],
+        help="Remove an agent from AgentHub configuration",
+    )
+    p_remove.add_argument(
+        "agent",
+        nargs="?",
+        help="Optional agent command, name, or number to remove (e.g. codex, 1)",
+    )
+    p_remove.add_argument(
+        "-y", "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
 
     # config
     p_cfg = subparsers.add_parser("config", help="Inspect or edit configuration")
@@ -1625,6 +1831,42 @@ def main() -> None:
 
     if args.subcommand == "add":
         add_agent_wizard(config, config_path)
+        return
+
+    if args.subcommand in ("remove", "rm", "delete"):
+        if not args.agent:
+            remove_agent_wizard(config, config_path)
+            return
+
+        idx, entry, err = resolve_agent_for_removal(config, args.agent, visible_agents=agents)
+        if err or idx is None or entry is None:
+            CONSOLE.print(f"[{COLOR_MISSING}]{err or f'Agent {args.agent!r} not found.'}[/{COLOR_MISSING}]")
+            CONSOLE.print("Use [bold cyan]agenthub list[/bold cyan] to see available agents.")
+            sys.exit(1)
+
+        target_name = str(entry.get("name", entry.get("command", "")))
+        target_cmd = str(entry.get("command", ""))
+        if not args.yes:
+            answer = Prompt.ask(
+                f"Remove [bold white]{target_name}[/bold white] ([cyan]{target_cmd}[/cyan]) from AgentHub?",
+                choices=["y", "n"],
+                default="n",
+            )
+            if answer.lower() != "y":
+                CONSOLE.print(f"[{COLOR_MUTED}]Removal cancelled.[/{COLOR_MUTED}]")
+                return
+
+        removed, ignored_added = remove_agent_from_config(config, idx)
+        save_config(config, config_path, quiet=True)
+        CONSOLE.print(
+            f"[{COLOR_READY}]✓ Removed {removed.get('name', target_cmd)} "
+            f"({removed.get('command', '')}) from configuration.[/{COLOR_READY}]"
+        )
+        if ignored_added:
+            CONSOLE.print(
+                f"[{COLOR_MUTED}]Added '{removed.get('command', '')}' to ignored list "
+                f"so auto-sync will not re-add it.[/{COLOR_MUTED}]"
+            )
         return
 
     if args.subcommand == "config":
