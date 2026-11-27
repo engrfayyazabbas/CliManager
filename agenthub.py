@@ -1043,7 +1043,7 @@ def build_menu_view(
 
     if agent_count == 0:
         lines.append(Text(
-            "  No agents detected. Press r to scan, d for doctor.",
+            "  No agents detected. Press r to scan, or open Manage to install.",
             style=COLOR_MUTED,
         ))
 
@@ -1103,10 +1103,8 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
         items.append((f"{a['name']}  ({a['command']})", "launch", i - 1, shortcut))
 
     items.append(("Sync & refresh", "refresh", None, "r"))
-    items.append(("Install agent", "install", None, "i"))
-    items.append(("Doctor", "doctor", None, "d"))
-    items.append(("Update all agents", "update", None, "u"))
-    items.append(("Settings", "settings", None, "s"))
+    items.append(("Update agents", "update", None, "u"))
+    items.append(("Manage", "manage", None, "m"))
     items.append(("Quit", "exit", None, "q"))
 
     selected = 0
@@ -1139,7 +1137,7 @@ def choose_action(agents: list[dict[str, Any]], config_path: Path) -> str:
                         return f"{kind}:{idx}" if idx is not None else kind
 
 # ---------------------------------------------------------------------------
-# Shared Sub-Menu Components (used by Update / Settings)
+# Shared Sub-Menu Components (used by Update / Manage)
 # ---------------------------------------------------------------------------
 
 def _submenu_render(
@@ -1843,7 +1841,7 @@ def run_uninstall_agent(
             CONSOLE.clear()
             CONSOLE.print(Panel(
                 f"[{COLOR_MISSING}]{msg}[/{COLOR_MISSING}]\n\n"
-                f"[{COLOR_MUTED}]Use 'Remove agent' in Settings to remove missing entries from configuration.[/{COLOR_MUTED}]",
+                f"[{COLOR_MUTED}]Use 'Remove from AgentHub' in Manage to remove missing entries from configuration.[/{COLOR_MUTED}]",
                 title=f"[bold {COLOR_PRIMARY}]Uninstall agent[/bold {COLOR_PRIMARY}]",
                 box=box.ROUNDED,
                 border_style=COLOR_PRIMARY,
@@ -1861,7 +1859,7 @@ def run_uninstall_agent(
                 f"[bold white]{name}[/bold white] ([cyan]{cmd}[/cyan]) does not have an automatic uninstall command.\n\n"
                 f"[bold white]Binary path:[/bold white] [dim]{exe}[/dim]\n"
                 f"[{COLOR_MUTED}]Uninstall it using its native installer or system settings, "
-                f"or use 'Remove agent' in Settings to remove it from AgentHub.[/{COLOR_MUTED}]",
+                f"or use 'Remove from AgentHub' in Manage to drop it from the list.[/{COLOR_MUTED}]",
                 title=f"[bold {COLOR_ACCENT}]Manual Uninstall Required[/bold {COLOR_ACCENT}]",
                 box=box.ROUNDED,
                 border_style=COLOR_ACCENT,
@@ -2020,24 +2018,25 @@ def uninstall_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[st
 
 
 # ---------------------------------------------------------------------------
-# Settings & Configuration Sub-Menu
+# Manage Sub-Menu (install / setup / rarer maintenance)
 # ---------------------------------------------------------------------------
 
-def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
-    """Simplified settings screen using the shared keyboard-driven menu."""
+def manage_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Manage screen: install/setup and rarer maintenance actions."""
     while True:
         agents = detect_agents(config)
         hidden = hidden_commands(config)
         configured_count = len(config.get("agents", []))
 
         choice = pick_from_menu(
-            "Settings",
+            "Manage",
             [
-                ("details", "Agent details", f"{len(agents)} visible"),
-                ("visibility", "Show / hide agents", f"{len(hidden)} hidden"),
-                ("install", "Install agent", ""),
+                ("install", "Install agent", "add a missing CLI"),
                 ("uninstall", "Uninstall agent", "system + config"),
-                ("remove", "Remove agent", f"{configured_count} configured · config only"),
+                ("remove", "Remove from AgentHub", f"{configured_count} configured · config only"),
+                ("visibility", "Show / hide agents", f"{len(hidden)} hidden"),
+                ("details", "Agent details", f"{len(agents)} visible"),
+                ("doctor", "Doctor", "environment & PATH check"),
                 ("open", "Open config file", ""),
                 ("reset", "Reset & re-detect", "clears hidden list"),
                 ("back", "Back", ""),
@@ -2048,16 +2047,18 @@ def settings_menu(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
         if choice == "back":
             return config
 
-        if choice == "details":
-            show_agent_details(agents)
-        elif choice == "visibility":
-            config = manage_visibility(config, config_path)
-        elif choice == "install":
+        if choice == "install":
             config = install_agent_wizard(config, config_path)
         elif choice == "uninstall":
             config = uninstall_agent_wizard(config, config_path)
         elif choice == "remove":
             config = remove_agent_wizard(config, config_path)
+        elif choice == "visibility":
+            config = manage_visibility(config, config_path)
+        elif choice == "details":
+            show_agent_details(agents)
+        elif choice == "doctor":
+            run_doctor(agents, config_path, interactive=True)
         elif choice == "open":
             open_config_file(config_path)
         elif choice == "reset":
@@ -2143,7 +2144,7 @@ def remove_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, 
                 message = f"{status_note}\n\n{message}"
             CONSOLE.print(Panel(
                 message,
-                title=f"[bold {COLOR_PRIMARY}]Remove agent[/bold {COLOR_PRIMARY}]",
+                title=f"[bold {COLOR_PRIMARY}]Remove from AgentHub[/bold {COLOR_PRIMARY}]",
                 box=box.ROUNDED,
                 border_style=COLOR_PRIMARY,
             ))
@@ -2164,7 +2165,7 @@ def remove_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, 
 
         subtitle = status_note or "Select an agent to remove from AgentHub configuration"
         choice = pick_from_menu(
-            "Remove agent",
+            "Remove from AgentHub",
             options,
             subtitle=subtitle,
         )
@@ -2178,7 +2179,7 @@ def remove_agent_wizard(config: dict[str, Any], config_path: Path) -> dict[str, 
         target_cmd = str(target.get("command", ""))
 
         if confirm_panel(
-            "Remove agent?",
+            "Remove from AgentHub?",
             f"Remove [bold white]{target_name}[/bold white] ([cyan]{target_cmd}[/cyan]) from AgentHub?\n\n"
             f"[{COLOR_MUTED}]Only removes the entry from your configuration; "
             f"installed binaries on disk are not deleted.[/{COLOR_MUTED}]",
@@ -2594,17 +2595,12 @@ def main() -> None:
             if not added:
                 CONSOLE.print(f"[{COLOR_MUTED}]✓ Up to date — no new agents discovered.[/{COLOR_MUTED}]")
             pause()
-        elif action == "install":
-            config = install_agent_wizard(config, config_path)
-            agents = detect_agents(config)
-        elif action == "doctor":
-            run_doctor(agents, config_path, interactive=True)
         elif action == "update":
             update_agents_wizard(agents)
             config, config_path = load_config()
             agents = detect_agents(config)
-        elif action == "settings":
-            config = settings_menu(config, config_path)
+        elif action == "manage":
+            config = manage_menu(config, config_path)
             agents = detect_agents(config)
         elif action == "exit":
             CONSOLE.clear()
